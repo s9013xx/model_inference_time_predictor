@@ -26,17 +26,27 @@ parser.add_argument('--device', type=str, default='', help='Device name as appea
 parser.add_argument('--iter_warmup', type=int, default=5, help='Number of iterations for warm-up')
 parser.add_argument('--iter_benchmark', type=int, default=10, help='Number of iterations for benchmark')
 
+parser.add_argument('--gpu', action="store_true", default=False, help='Benchmark using GPU')
+
 args = parser.parse_args()
 
 if args.device == '':
     print('you should use --device parameter to specify collect data for which device, ex: --device 2080ti')
     exit()
 
+if args.gpu is False:
+    os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
+if tf.test.gpu_device_name():
+    print('GPU found')
+else:
+    print("No GPU found")
+
 def main(_):
     ########### Benchmark convolution ##########
     if args.conv:
         if args.log_file == '':
-            log_file = str('./conv_goldan_values_%s.csv' %(time.strftime("%Y%m%d%H%M%S")))
+            log_file = str('./goldan_values/conv_goldan_values_%s_%s.csv' %(args.device, time.strftime("%Y%m%d%H%M%S")))
         else:
             log_file = args.log_file
 
@@ -45,7 +55,7 @@ def main(_):
             'tf.nn.relu']
 
         conv_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias']
-        df = pd.read_csv('conv_goldan_parameters_20191107182205.csv', usecols=conv_col_name)
+        df = pd.read_csv('conv_goldan_parameters_20191111141255.csv', usecols=conv_col_name)
 
         conv_values_list = []
 
@@ -107,7 +117,7 @@ def main(_):
     ########### Benchmark fully connection ##########
     if args.fc:
         if args.log_file == '':
-            log_file = str('./fc_goldan_values_%s.csv' %(time.strftime("%Y%m%d%H%M%S")))
+            log_file = str('./goldan_values/fc_goldan_values_%s_%s.csv' %(args.device, time.strftime("%Y%m%d%H%M%S")))
         else:
             log_file = args.log_file
 
@@ -173,7 +183,7 @@ def main(_):
     ########### Benchmark pooling ##########
     if args.pool:
         if args.log_file == '':
-            log_file = str('./pool_goldan_values_%s.csv' %(time.strftime("%Y%m%d%H%M%S")))
+            log_file = str('./goldan_values/pool_goldan_values_%s_%s.csv' %(args.device, time.strftime("%Y%m%d%H%M%S")))
         else:
             log_file = args.log_file
 
