@@ -126,7 +126,7 @@ def main(_):
             'tf.nn.relu']
 
         fc_col_name = ['batchsize', 'dim_input', 'dim_output', 'activation_fct']
-        df = pd.read_csv('fc_goldan_parameters_20191107204521.csv', usecols=fc_col_name)
+        df = pd.read_csv('fc_goldan_parameters_20191111155723.csv', usecols=fc_col_name)
 
         fc_values_list = []
 
