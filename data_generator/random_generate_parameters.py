@@ -41,13 +41,18 @@ def main(_):
         conv_parameters_list = []
         conv_global_count = 1
 
-        while 1 :
+        while 1:
             print('conv_global_count:', conv_global_count)
             conv_global_count+=1
             
             batchsize = random.randint(1,64)
             matsize = random.randint(1,512)
             kernelsize = random.randint(1,min(11,matsize)+1)
+            while 1: 
+                if kernelsize > matsize:
+                    kernelsize = random.randint(1,min(11,matsize)+1)
+                else:
+                    break
             channels_in = random.randint(1,int(10000/matsize))
             channels_out = random.randint(1,int(10000/matsize))
             strides = random.randint(1,4)
