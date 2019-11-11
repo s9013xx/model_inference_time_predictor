@@ -55,12 +55,12 @@ def main(_):
             'tf.nn.relu']
 
         conv_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias']
-        df = pd.read_csv('conv_goldan_parameters_20191111141255.csv', usecols=conv_col_name)
+        df = pd.read_csv('conv_parameters.csv', usecols=conv_col_name)
 
         conv_values_list = []
 
-        # for i in range(len(df.index)):
-        for i in range(100):
+        for i in range(len(df.index)):
+        # for i in range(100):
             print('========== conv', i , '==========')
             batchsize = df.iloc[i, 0]
             matsize = df.iloc[i, 1]
@@ -126,12 +126,12 @@ def main(_):
             'tf.nn.relu']
 
         fc_col_name = ['batchsize', 'dim_input', 'dim_output', 'activation_fct']
-        df = pd.read_csv('fc_goldan_parameters_20191111155723.csv', usecols=fc_col_name)
+        df = pd.read_csv('fc_parameters.csv', usecols=fc_col_name)
 
         fc_values_list = []
 
-        # for i in range(len(df.index)):
-        for i in range(100):
+        for i in range(len(df.index)):
+        # for i in range(100):
             print('========== fc:', i , '==========')
             batchsize = df.iloc[i, 0]
             dim_input = df.iloc[i, 1]
@@ -188,12 +188,12 @@ def main(_):
             log_file = args.log_file
 
         pool_col_name = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides']
-        df = pd.read_csv('pool_goldan_parameters_20191107220141.csv', usecols=pool_col_name)
+        df = pd.read_csv('pool_parameters.csv', usecols=pool_col_name)
 
         pool_values_list = []
 
-        # for i in range(len(df.index)):
-        for i in range(100):
+        for i in range(len(df.index)):
+        # for i in range(100):
             print('========== pool:', i , '==========')
             batchsize = df.iloc[i, 0]
             matsize = df.iloc[i, 1]
