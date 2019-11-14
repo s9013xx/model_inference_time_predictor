@@ -73,7 +73,7 @@ def main(_):
             padding = df.iloc[i, 6]
             activation_fct = df.iloc[i, 7]
             use_bias = df.iloc[i, 8]
-
+            print(batchsize, matsize, kernelsize, channels_in, channels_out, strides, padding, activation_fct, use_bias)
             time_list = []
             time_max = None
             time_min = None
@@ -149,7 +149,7 @@ def main(_):
             dim_input = df.iloc[i, 1]
             dim_output = df.iloc[i, 2]
             activation_fct = df.iloc[i, 3]
-            
+            print(batchsize, dim_input, dim_output, activation_fct)
             time_list = []
             time_max = None
             time_min = None
@@ -223,7 +223,7 @@ def main(_):
             poolsize = df.iloc[i, 3]
             padding = df.iloc[i, 4]
             strides = df.iloc[i, 5]
-
+            print(batchsize, matsize, channels_in, poolsize, padding, strides)
             time_list = []
             time_max = None
             time_min = None
