@@ -1,5 +1,4 @@
-# model_inference_time_predictor
-========
+# Model Inference Time Predictor
 
 Step 1. Download need software.
 

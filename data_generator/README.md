@@ -1,5 +1,4 @@
-# data_generator
-========
+# Data Generator
 
 This folder is use to generate parameters in convolution, fully connected, pooling layers and collect inference time at each parameters. Finally, this data will store in goldan_values folder.
 
