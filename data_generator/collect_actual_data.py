@@ -26,7 +26,7 @@ parser.add_argument('--device', type=str, default='', help='Device name as appea
 parser.add_argument('--iter_warmup', type=int, default=5, help='Number of iterations for warm-up')
 parser.add_argument('--iter_benchmark', type=int, default=10, help='Number of iterations for benchmark')
 
-parser.add_argument('--cpu', action="store_true", default=False, help='Benchmark using GPU')
+parser.add_argument('--cpu', action="store_true", default=False, help='Benchmark using CPU')
 
 args = parser.parse_args()
 
