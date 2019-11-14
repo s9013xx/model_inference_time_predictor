@@ -55,7 +55,7 @@ def main(_):
             'tf.nn.relu']
 
         conv_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias']
-        df = pd.read_csv('conv_parameters.csv', usecols=conv_col_name)
+        df = pd.read_csv('shuffled_parameters/conv_parameters_shuffled.csv', usecols=conv_col_name)
 
         # conv_values_list = []
         golden_values_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
@@ -136,7 +136,7 @@ def main(_):
             'tf.nn.relu']
 
         fc_col_name = ['batchsize', 'dim_input', 'dim_output', 'activation_fct']
-        df = pd.read_csv('fc_parameters.csv', usecols=fc_col_name)
+        df = pd.read_csv('shuffled_parameters/fc_parameters_shuffled.csv', usecols=fc_col_name)
 
         # fc_values_list = []
         golden_values_col_name = ['batchsize', 'dim_input', 'dim_output', 'activation_fct', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
@@ -208,7 +208,7 @@ def main(_):
             log_file = args.log_file
 
         pool_col_name = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides']
-        df = pd.read_csv('pool_parameters.csv', usecols=pool_col_name)
+        df = pd.read_csv('shuffled_parameters/pool_parameters_shuffled.csv', usecols=pool_col_name)
 
         # pool_values_list = []
         golden_values_col_name = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
