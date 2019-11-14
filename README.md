@@ -4,7 +4,7 @@ Step 1. Download need software.
 
     sudo apt-get install python3-venv
 
-    sudo apt-get  install tmux
+    sudo apt-get install tmux
 
 
 Step 2. Use tmux to avoid terminate when ssh connection close.
