@@ -26,7 +26,7 @@ parser.add_argument('--device', type=str, default='', help='Device name as appea
 parser.add_argument('--iter_warmup', type=int, default=5, help='Number of iterations for warm-up')
 parser.add_argument('--iter_benchmark', type=int, default=10, help='Number of iterations for benchmark')
 
-parser.add_argument('--gpu', action="store_true", default=False, help='Benchmark using GPU')
+parser.add_argument('--cpu', action="store_true", default=False, help='Benchmark using GPU')
 
 args = parser.parse_args()
 
@@ -34,7 +34,7 @@ if args.device == '':
     print('you should use --device parameter to specify collect data for which device, ex: --device 2080ti')
     exit()
 
-if args.gpu is False:
+if args.cpu:
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 if tf.test.gpu_device_name():
@@ -57,7 +57,9 @@ def main(_):
         conv_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias']
         df = pd.read_csv('conv_parameters.csv', usecols=conv_col_name)
 
-        conv_values_list = []
+        # conv_values_list = []
+        golden_values_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
+        golden_values_data = pd.DataFrame(columns=golden_values_col_name)
 
         for i in range(len(df.index)):
         # for i in range(100):
@@ -108,12 +110,20 @@ def main(_):
                 print('except')
 
             conv_row_data = [batchsize, matsize, kernelsize, channels_in, channels_out, strides, padding, activation_fct, use_bias, time_max, time_min, time_median, time_mean, time_trim_mean]
-            conv_values_list.append(conv_row_data)
+            golden_values_data.loc[0] = conv_row_data
+            
+            if i==0: 
+                golden_values_data.to_csv(log_file, index=False)
+            else:
+                golden_values_data.to_csv(log_file, index=False, mode='a', header=False)
 
-        np_array_values = np.array(conv_values_list)
-        golden_values_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
-        golden_values_data = pd.DataFrame(np_array_values, columns=golden_values_col_name)
-        golden_values_data.to_csv(log_file, index=False)
+        #     conv_row_data = [batchsize, matsize, kernelsize, channels_in, channels_out, strides, padding, activation_fct, use_bias, time_max, time_min, time_median, time_mean, time_trim_mean]
+        #     conv_values_list.append(conv_row_data)
+
+        # np_array_values = np.array(conv_values_list)
+        # golden_values_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
+        # golden_values_data = pd.DataFrame(np_array_values, columns=golden_values_col_name)
+        # golden_values_data.to_csv(log_file, index=False)
     ########### Benchmark fully connection ##########
     if args.fc:
         if args.log_file == '':
@@ -128,7 +138,9 @@ def main(_):
         fc_col_name = ['batchsize', 'dim_input', 'dim_output', 'activation_fct']
         df = pd.read_csv('fc_parameters.csv', usecols=fc_col_name)
 
-        fc_values_list = []
+        # fc_values_list = []
+        golden_values_col_name = ['batchsize', 'dim_input', 'dim_output', 'activation_fct', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
+        golden_values_data = pd.DataFrame(columns=golden_values_col_name)
 
         for i in range(len(df.index)):
         # for i in range(100):
@@ -174,12 +186,20 @@ def main(_):
                 print('except')
 
             fc_row_data = [batchsize, dim_input, dim_output, activation_fct, time_max, time_min, time_median, time_mean, time_trim_mean]
-            fc_values_list.append(fc_row_data)
+            golden_values_data.loc[0] = fc_row_data
+            
+            if i==0: 
+                golden_values_data.to_csv(log_file, index=False)
+            else:
+                golden_values_data.to_csv(log_file, index=False, mode='a', header=False)
 
-        np_array_values = np.array(fc_values_list)
-        golden_values_col_name = ['batchsize', 'dim_input', 'dim_output', 'activation_fct', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
-        golden_values_data = pd.DataFrame(np_array_values, columns=golden_values_col_name)
-        golden_values_data.to_csv(log_file, index=False)
+        #     fc_row_data = [batchsize, dim_input, dim_output, activation_fct, time_max, time_min, time_median, time_mean, time_trim_mean]
+        #     fc_values_list.append(fc_row_data)
+
+        # np_array_values = np.array(fc_values_list)
+        # golden_values_col_name = ['batchsize', 'dim_input', 'dim_output', 'activation_fct', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
+        # golden_values_data = pd.DataFrame(np_array_values, columns=golden_values_col_name)
+        # golden_values_data.to_csv(log_file, index=False)
     ########### Benchmark pooling ##########
     if args.pool:
         if args.log_file == '':
@@ -190,7 +210,9 @@ def main(_):
         pool_col_name = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides']
         df = pd.read_csv('pool_parameters.csv', usecols=pool_col_name)
 
-        pool_values_list = []
+        # pool_values_list = []
+        golden_values_col_name = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
+        golden_values_data = pd.DataFrame(columns=golden_values_col_name)
 
         for i in range(len(df.index)):
         # for i in range(100):
@@ -238,12 +260,20 @@ def main(_):
                 print('except')
 
             pool_row_data = [batchsize, matsize, channels_in, poolsize, padding, strides, time_max, time_min, time_median, time_mean, time_trim_mean]
-            pool_values_list.append(pool_row_data)
+            golden_values_data.loc[0] = pool_row_data
+            
+            if i==0: 
+                golden_values_data.to_csv(log_file, index=False)
+            else:
+                golden_values_data.to_csv(log_file, index=False, mode='a', header=False)
 
-        np_array_values = np.array(pool_values_list)
-        golden_values_col_name = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
-        golden_values_data = pd.DataFrame(np_array_values, columns=golden_values_col_name)
-        golden_values_data.to_csv(log_file, index=False)
+        #     pool_row_data = [batchsize, matsize, channels_in, poolsize, padding, strides, time_max, time_min, time_median, time_mean, time_trim_mean]
+        #     pool_values_list.append(pool_row_data)
+
+        # np_array_values = np.array(pool_values_list)
+        # golden_values_col_name = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
+        # golden_values_data = pd.DataFrame(np_array_values, columns=golden_values_col_name)
+        # golden_values_data.to_csv(log_file, index=False)
 
         
 if __name__ == '__main__':
