@@ -11,6 +11,7 @@ import time
 import random
 import numpy
 from scipy import stats
+import subprocess
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
 
@@ -19,6 +20,22 @@ parser = argparse.ArgumentParser('Collect Actual Data Parser')
 parser.add_argument('--conv', action="store_true", default=False, help='Benchmark convolution layer')
 parser.add_argument('--fc', action="store_true", default=False, help='Benchmark fully connection layer')
 parser.add_argument('--pool', action="store_true", default=False, help='Benchmark pooling layer')
+parser.add_argument('--test', action="store_true", default=False, help='Benchmark pooling layer')
+# Convolution Operation Parameters
+parser.add_argument('--batchsize', type=int, default=0, help='Batch size of convolution, fully connected, pooling operation')
+parser.add_argument('--matsize', type=int, default=0, help='Matrix size of convolution, pooling operation')
+parser.add_argument('--kernelsize', type=int, default=0, help='Kernel size of convolution operation')
+parser.add_argument('--channels_in', type=int, default=0, help='Channel input convolution, pooling operation')
+parser.add_argument('--channels_out', type=int, default=0, help='Channel output of convolution operation')
+parser.add_argument('--strides', type=int, default=0, help='Strides of convolution, pooling operation')
+parser.add_argument('--padding', type=int, default=0, help='Padding of convolution, pooling operation')
+parser.add_argument('--activation_fct', type=int, default=0, help='Activate function of convolution operation')
+parser.add_argument('--use_bias', type=int, default=0, help='Use bias of convolution operation')
+# Fully Connected Operation Parameters
+parser.add_argument('--dim_input', type=int, default=0, help='Dimention input of fully connected operation')
+parser.add_argument('--dim_output', type=int, default=0, help='Dimention output of fully connected operation')
+# Pooling Operation Parameters
+parser.add_argument('--poolsize', type=int, default=0, help='Pooling size of pooling operation')
 # General parameters
 parser.add_argument('--log_file', type=str, default='', help='Text file to store results')
 parser.add_argument('--device', type=str, default='', help='Device name as appearing in logfile')
@@ -43,6 +60,62 @@ else:
 
 def main(_):
     ########### Benchmark convolution ##########
+    if args.test:
+        activation_list = [
+            'None',
+            'tf.nn.relu']
+
+        conv_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias']
+        df = pd.read_csv('shuffled_parameters/conv_parameters_shuffled.csv', usecols=conv_col_name)
+
+        golden_values_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
+        golden_values_data = pd.DataFrame(columns=golden_values_col_name)
+
+        i = 0
+        print('========== conv', i , '==========')
+        batchsize = df.iloc[i, 0]
+        matsize = df.iloc[i, 1]
+        kernelsize = df.iloc[i, 2]
+        channels_in = df.iloc[i, 3]
+        channels_out = df.iloc[i, 4]
+        strides = df.iloc[i, 5]
+        padding = df.iloc[i, 6]
+        activation_fct = df.iloc[i, 7]
+        use_bias = df.iloc[i, 8]
+        print(batchsize, matsize, kernelsize, channels_in, channels_out, strides, padding, activation_fct, use_bias)
+        time_list = []
+        time_max = None
+        time_min = None
+        time_median = None
+        time_mean = None
+        time_trim_mean = None
+
+        command = 'python operation_inference.py --conv --batchsize=62 --matsize=471 --kernelsize=7 --channels_in=19 --channels_out=18 --strides=1 --padding=0 --activation_fct=0 --use_bias=1 > temp'
+        process = subprocess.Popen(command, stdout = subprocess.PIPE, shell = True)
+        process.wait()
+
+        line_count = 0
+        tmp_file = open("temp", "r")
+        for line in tmp_file:
+            value = line.split(':')[1].strip()
+            if line_count == 0:
+                time_max = value
+            if line_count == 1:
+                time_min = value
+            if line_count == 2:
+                time_median = value
+            if line_count == 3:
+                time_mean = value
+            if line_count == 4:
+                time_trim_mean = value
+            line_count = line_count + 1
+        print('time_max:', time_max)
+        print('time_min:', time_min)
+        print('time_median:', time_median)
+        print('time_mean:', time_mean)
+        print('time_trim_mean:', time_trim_mean)
+
+    ########### Benchmark convolution ##########
     if args.conv:
         if args.log_file == '':
             log_file = str('./goldan_values/conv_goldan_values_%s_%s.csv' %(args.device, time.strftime("%Y%m%d%H%M%S")))
@@ -60,8 +133,8 @@ def main(_):
         golden_values_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
         golden_values_data = pd.DataFrame(columns=golden_values_col_name)
 
-        for i in range(len(df.index)):
-        # for i in range(100):
+        # for i in range(len(df.index)):
+        for i in range(200):
             print('========== conv', i , '==========')
             batchsize = df.iloc[i, 0]
             matsize = df.iloc[i, 1]
@@ -80,33 +153,25 @@ def main(_):
             time_mean = None
             time_trim_mean = None
 
-            try:
-                tf.reset_default_graph()
-                image = tf.Variable(tf.random_normal([batchsize, matsize, matsize, channels_in]))
-                op = tf.layers.conv2d(image, filters=channels_out, kernel_size=[kernelsize, kernelsize], strides=(strides, strides), padding=('SAME' if padding==1 else 'VALID'), activation=eval(activation_list[activation_fct]), use_bias=use_bias)
-                sess = tf.Session()
-                if int((tf.__version__).split('.')[1]) < 12 and int((tf.__version__).split('.')[0]) < 1:
-                    init = tf.initialize_all_variables()
-                else:
-                    init = tf.global_variables_initializer()
-                sess.run(init)
-                # Warm-up run
-                for _ in range(args.iter_warmup):
-                    sess.run(op)
-                # Benchmark run
-                for _ in range(args.iter_benchmark):
-                    start_time = time.time()
-                    sess.run(op)
-                    time_list.append(((time.time()-start_time) * 1000))
-                np_array_parameters = np.array(time_list)
+            command = 'python operation_inference.py --conv --batchsize=%d --matsize=%d --kernelsize=%d --channels_in=%d --channels_out=%d --strides=%d --padding=%d --activation_fct=%d --use_bias=%d > temp' %(batchsize, matsize, kernelsize, channels_in, channels_out, strides, padding, activation_fct, use_bias)
+            process = subprocess.Popen(command, stdout = subprocess.PIPE, shell = True)
+            process.wait()
 
-                time_max = numpy.amax(np_array_parameters)
-                time_min = numpy.amin(np_array_parameters)
-                time_median = numpy.median(np_array_parameters)
-                time_mean = numpy.mean(np_array_parameters)
-                time_trim_mean = stats.trim_mean(np_array_parameters, 0.1)
-            except:
-                print('except')
+            line_count = 0
+            tmp_file = open("temp", "r")
+            for line in tmp_file:
+                value = line.split(':')[1].strip()
+                if line_count == 0:
+                    time_max = value
+                if line_count == 1:
+                    time_min = value
+                if line_count == 2:
+                    time_median = value
+                if line_count == 3:
+                    time_mean = value
+                if line_count == 4:
+                    time_trim_mean = value
+                line_count = line_count + 1
 
             conv_row_data = [batchsize, matsize, kernelsize, channels_in, channels_out, strides, padding, activation_fct, use_bias, time_max, time_min, time_median, time_mean, time_trim_mean]
             golden_values_data.loc[0] = conv_row_data
@@ -116,13 +181,6 @@ def main(_):
             else:
                 golden_values_data.to_csv(log_file, index=False, mode='a', header=False)
 
-        #     conv_row_data = [batchsize, matsize, kernelsize, channels_in, channels_out, strides, padding, activation_fct, use_bias, time_max, time_min, time_median, time_mean, time_trim_mean]
-        #     conv_values_list.append(conv_row_data)
-
-        # np_array_values = np.array(conv_values_list)
-        # golden_values_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
-        # golden_values_data = pd.DataFrame(np_array_values, columns=golden_values_col_name)
-        # golden_values_data.to_csv(log_file, index=False)
     ########### Benchmark fully connection ##########
     if args.fc:
         if args.log_file == '':
@@ -141,8 +199,8 @@ def main(_):
         golden_values_col_name = ['batchsize', 'dim_input', 'dim_output', 'activation_fct', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
         golden_values_data = pd.DataFrame(columns=golden_values_col_name)
 
-        for i in range(len(df.index)):
-        # for i in range(100):
+        # for i in range(len(df.index)):
+        for i in range(200):
             print('========== fc:', i , '==========')
             batchsize = df.iloc[i, 0]
             dim_input = df.iloc[i, 1]
@@ -156,33 +214,25 @@ def main(_):
             time_mean = None
             time_trim_mean = None
 
-            try:
-                tf.reset_default_graph()
-                vector_input = tf.Variable(tf.ones(shape=[batchsize,dim_input]))
-                op = tf.layers.dense(inputs=vector_input, units=dim_output, kernel_initializer=tf.ones_initializer(), activation=eval(activation_list[activation_fct]))
-                sess = tf.Session()
-                if int((tf.__version__).split('.')[1]) < 12 and int((tf.__version__).split('.')[0]) < 1:
-                    init = tf.initialize_all_variables()
-                else:
-                    init = tf.global_variables_initializer()
-                sess.run(init)
-                # Warm-up run
-                for _ in range(args.iter_warmup):
-                    sess.run(op)
-                # Benchmark run
-                for _ in range(args.iter_benchmark):
-                    start_time = time.time()
-                    sess.run(op)
-                    time_list.append(((time.time()-start_time) * 1000))
-                np_array_parameters = np.array(time_list)
+            command = 'python operation_inference.py --fc --batchsize=%d --dim_input=%d --dim_output=%d --activation_fct=%d > temp' %(batchsize, dim_input, dim_output, activation_fct)
+            process = subprocess.Popen(command, stdout = subprocess.PIPE, shell = True)
+            process.wait()
 
-                time_max = numpy.amax(np_array_parameters)
-                time_min = numpy.amin(np_array_parameters)
-                time_median = numpy.median(np_array_parameters)
-                time_mean = numpy.mean(np_array_parameters)
-                time_trim_mean = stats.trim_mean(np_array_parameters, 0.1)
-            except:
-                print('except')
+            line_count = 0
+            tmp_file = open("temp", "r")
+            for line in tmp_file:
+                value = line.split(':')[1].strip()
+                if line_count == 0:
+                    time_max = value
+                if line_count == 1:
+                    time_min = value
+                if line_count == 2:
+                    time_median = value
+                if line_count == 3:
+                    time_mean = value
+                if line_count == 4:
+                    time_trim_mean = value
+                line_count = line_count + 1
 
             fc_row_data = [batchsize, dim_input, dim_output, activation_fct, time_max, time_min, time_median, time_mean, time_trim_mean]
             golden_values_data.loc[0] = fc_row_data
@@ -192,13 +242,6 @@ def main(_):
             else:
                 golden_values_data.to_csv(log_file, index=False, mode='a', header=False)
 
-        #     fc_row_data = [batchsize, dim_input, dim_output, activation_fct, time_max, time_min, time_median, time_mean, time_trim_mean]
-        #     fc_values_list.append(fc_row_data)
-
-        # np_array_values = np.array(fc_values_list)
-        # golden_values_col_name = ['batchsize', 'dim_input', 'dim_output', 'activation_fct', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
-        # golden_values_data = pd.DataFrame(np_array_values, columns=golden_values_col_name)
-        # golden_values_data.to_csv(log_file, index=False)
     ########### Benchmark pooling ##########
     if args.pool:
         if args.log_file == '':
@@ -213,8 +256,8 @@ def main(_):
         golden_values_col_name = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
         golden_values_data = pd.DataFrame(columns=golden_values_col_name)
 
-        for i in range(len(df.index)):
-        # for i in range(100):
+        # for i in range(len(df.index)):
+        for i in range(200):
             print('========== pool:', i , '==========')
             batchsize = df.iloc[i, 0]
             matsize = df.iloc[i, 1]
@@ -230,33 +273,25 @@ def main(_):
             time_mean = None
             time_trim_mean = None
 
-            try:
-                tf.reset_default_graph()
-                image = tf.Variable(tf.random_normal([batchsize, matsize, matsize, channels_in]))
-                op = tf.layers.max_pooling2d(image, pool_size=(poolsize, poolsize), strides=(strides, strides), padding=('SAME' if padding==1 else 'VALID'))
-                sess = tf.Session()
-                if int((tf.__version__).split('.')[1]) < 12 and int((tf.__version__).split('.')[0]) < 1:
-                    init = tf.initialize_all_variables()
-                else:
-                    init = tf.global_variables_initializer()
-                sess.run(init)
-                # Warm-up run
-                for _ in range(args.iter_warmup):
-                    sess.run(op)
-                # Benchmark run
-                for _ in range(args.iter_benchmark):
-                    start_time = time.time()
-                    sess.run(op)
-                    time_list.append(((time.time()-start_time) * 1000))
-                np_array_parameters = np.array(time_list)
+            command = 'python operation_inference.py --pool --batchsize=%d --matsize=%d --channels_in=%d --poolsize=%d --padding=%d --strides=%d> temp' %(batchsize, matsize, channels_in, poolsize, padding, strides)
+            process = subprocess.Popen(command, stdout = subprocess.PIPE, shell = True)
+            process.wait()
 
-                time_max = numpy.amax(np_array_parameters)
-                time_min = numpy.amin(np_array_parameters)
-                time_median = numpy.median(np_array_parameters)
-                time_mean = numpy.mean(np_array_parameters)
-                time_trim_mean = stats.trim_mean(np_array_parameters, 0.1)
-            except:
-                print('except')
+            line_count = 0
+            tmp_file = open("temp", "r")
+            for line in tmp_file:
+                value = line.split(':')[1].strip()
+                if line_count == 0:
+                    time_max = value
+                if line_count == 1:
+                    time_min = value
+                if line_count == 2:
+                    time_median = value
+                if line_count == 3:
+                    time_mean = value
+                if line_count == 4:
+                    time_trim_mean = value
+                line_count = line_count + 1
 
             pool_row_data = [batchsize, matsize, channels_in, poolsize, padding, strides, time_max, time_min, time_median, time_mean, time_trim_mean]
             golden_values_data.loc[0] = pool_row_data
@@ -266,14 +301,5 @@ def main(_):
             else:
                 golden_values_data.to_csv(log_file, index=False, mode='a', header=False)
 
-        #     pool_row_data = [batchsize, matsize, channels_in, poolsize, padding, strides, time_max, time_min, time_median, time_mean, time_trim_mean]
-        #     pool_values_list.append(pool_row_data)
-
-        # np_array_values = np.array(pool_values_list)
-        # golden_values_col_name = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
-        # golden_values_data = pd.DataFrame(np_array_values, columns=golden_values_col_name)
-        # golden_values_data.to_csv(log_file, index=False)
-
-        
 if __name__ == '__main__':
     tf.app.run()
