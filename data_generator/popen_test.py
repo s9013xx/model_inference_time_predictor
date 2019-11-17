@@ -133,8 +133,8 @@ def main(_):
         golden_values_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
         golden_values_data = pd.DataFrame(columns=golden_values_col_name)
 
-        # for i in range(len(df.index)):
-        for i in range(200):
+        for i in range(len(df.index)):
+        # for i in range(200):
             print('========== conv', i , '==========')
             batchsize = df.iloc[i, 0]
             matsize = df.iloc[i, 1]
@@ -199,8 +199,8 @@ def main(_):
         golden_values_col_name = ['batchsize', 'dim_input', 'dim_output', 'activation_fct', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
         golden_values_data = pd.DataFrame(columns=golden_values_col_name)
 
-        # for i in range(len(df.index)):
-        for i in range(200):
+        for i in range(len(df.index)):
+        # for i in range(200):
             print('========== fc:', i , '==========')
             batchsize = df.iloc[i, 0]
             dim_input = df.iloc[i, 1]
@@ -256,8 +256,8 @@ def main(_):
         golden_values_col_name = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
         golden_values_data = pd.DataFrame(columns=golden_values_col_name)
 
-        # for i in range(len(df.index)):
-        for i in range(200):
+        for i in range(len(df.index)):
+        # for i in range(200):
             print('========== pool:', i , '==========')
             batchsize = df.iloc[i, 0]
             matsize = df.iloc[i, 1]
