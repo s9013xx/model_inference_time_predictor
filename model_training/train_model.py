@@ -153,6 +153,69 @@ def tensorflow_model_training(np_train_feature, np_train_time, np_validation_fea
         log_data = pd.DataFrame(np_log_array, columns=result_col)
         log_data.to_csv('log_%s.csv' % args.device, index=False)
 
+
+# ---divide---                                                                                                                                                                                                     
+# (80000, 15)                                                                                                                                                                                                      
+# (10000, 15)                                                                                                                                                                                                      
+# (10000, 15)                                                                                                                                                                                                      
+# ---filter---                                                                                                                                                                                                     
+# (79987, 15)                                                                                                                                                                                                      
+# (9998, 15)                                                                                                                                                                                                       
+# (9999, 15)                                                                                                                                                                                                       
+# ---feature---                                                                                                                                                                                                    
+# (79987, 9)                                                                                                                                                                                                       
+# (9998, 9)                                                                                                                                                                                                        
+# (9999, 9)                                                                                                                                                                                                        
+# ---time---                                                                                                                                                                                                       
+# (79987, 1)                                                                                                                                                                                                       
+# (9998, 1)                                                                                                                                                                                                        
+# (9999, 1)  
+
+# This funcion is divide total data to three parts (train, validate, test)
+def data_divider(df_ori_data, train_start_index, train_end_index, validate_start_index, validate_end_index, test_start_index, test_end_index, feature_col, time_col):
+    # 1. Divide total data to train, validation, test part
+    df_train_data = df_ori_data.loc[train_start_index:train_end_index, :]
+    df_validate_data = df_ori_data.loc[validate_start_index:validate_end_index, :]
+    df_test_data = df_ori_data.loc[test_start_index:test_end_index, :]
+    print('---divide---')
+    print(df_train_data.shape)
+    print(df_validate_data.shape)
+    print(df_test_data.shape)
+    # 2. Time invalid filter
+    df_train_data = df_train_data[df_train_data['time_median']>0]
+    df_validate_data = df_validate_data[df_validate_data['time_median']>0]
+    df_test_data = df_test_data[df_test_data['time_median']>0]
+    print('---filter---')
+    print(df_train_data.shape)
+    print(df_validate_data.shape)
+    print(df_test_data.shape)
+    # 3. Get features and translate to numpy format
+    df_train_feature = df_train_data.loc[:, feature_col]
+    df_validate_feature = df_validate_data.loc[:, feature_col]
+    df_test_feature = df_test_data.loc[:, feature_col]
+    np_train_feature = df_train_feature[feature_col].to_numpy().reshape(-1, len(feature_col))
+    np_validate_feature = df_validate_feature[feature_col].to_numpy().reshape(-1, len(feature_col))
+    np_test_feature = df_test_feature[feature_col].to_numpy().reshape(-1, len(feature_col))
+    print('---feature---')
+    print(df_train_feature.shape)
+    print(df_validate_feature.shape)
+    print(df_test_feature.shape)
+    # 4. Get time and translate to numpy format
+    df_train_time = df_train_data.loc[:, time_col]
+    df_validate_time = df_validate_data.loc[:, time_col]
+    df_test_time = df_test_data.loc[:, time_col]
+    np_train_time = df_train_time[time_col].to_numpy().reshape(-1, len(time_col))
+    np_validate_time = df_validate_time[time_col].to_numpy().reshape(-1, len(time_col))
+    np_test_time = df_test_time[time_col].to_numpy().reshape(-1, len(time_col))
+    print('---time---')
+    print(df_train_time.shape)
+    print(df_validate_time.shape)
+    print(df_test_time.shape)
+
+    # store_df_conv_validate_feature = df_validate_data[df_validate_data['time_median']>0]
+
+    return np_train_feature, np_train_time, np_validate_feature, np_validate_time, np_test_feature, np_test_time, df_validate_data
+
 def main(_):
     ########### Training convolution model ##########
     if args.conv:
@@ -163,48 +226,17 @@ def main(_):
             df_conv_data = pd.read_csv(file, usecols=golden_values_col)
             df_conv_data['log_time_median'] = np.log(df_conv_data[['time_median']])
 
-            # 1. Divide total data to train, validation, test part
-            df_conv_train_data = df_conv_data.loc[:args.training_data_number-1, :]
-            df_conv_validate_data = df_conv_data.loc[args.training_data_number:args.training_data_number+args.validation_data_number-1, :]
-            df_conv_test_data = df_conv_data.loc[args.training_data_number+args.validation_data_number:args.data_number-1, :]
-            print('---divide---')
-            print(df_conv_train_data.shape)
-            print(df_conv_validate_data.shape)
-            print(df_conv_test_data.shape)
-            # 2. Time invalid filter
-            df_conv_train_data = df_conv_train_data[df_conv_train_data['time_median']>0]
-            df_conv_validate_data = df_conv_validate_data[df_conv_validate_data['time_median']>0]
-            df_conv_test_data = df_conv_test_data[df_conv_test_data['time_median']>0]
-            print('---filter---')
-            print(df_conv_train_data.shape)
-            print(df_conv_validate_data.shape)
-            print(df_conv_test_data.shape)
-            # 3. Get features and translate to numpy format
-            df_conv_train_feature = df_conv_train_data.loc[:, conv_feature_col]
-            df_conv_validate_feature = df_conv_validate_data.loc[:, conv_feature_col]
-            df_conv_test_feature = df_conv_test_data.loc[:, conv_feature_col]
-            np_conv_train_feature = df_conv_train_feature[conv_feature_col].to_numpy().reshape(-1, len(conv_feature_col))
-            np_conv_validate_feature = df_conv_validate_feature[conv_feature_col].to_numpy().reshape(-1, len(conv_feature_col))
-            np_conv_test_feature = df_conv_test_feature[conv_feature_col].to_numpy().reshape(-1, len(conv_feature_col))
-            print('---feature---')
-            print(df_conv_train_feature.shape)
-            print(df_conv_validate_feature.shape)
-            print(df_conv_test_feature.shape)
-            # 4. Get time and translate to numpy format
-            df_conv_train_time = df_conv_train_data.loc[:, conv_time_col]
-            df_conv_validate_time = df_conv_validate_data.loc[:, conv_time_col]
-            df_conv_test_time = df_conv_test_data.loc[:, conv_time_col]
-            np_conv_train_time    = df_conv_train_time[conv_time_col].to_numpy().reshape(-1, len(conv_time_col))
-            np_conv_validate_time    = df_conv_validate_time[conv_time_col].to_numpy().reshape(-1, len(conv_time_col))
-            np_conv_test_time    = df_conv_test_time[conv_time_col].to_numpy().reshape(-1, len(conv_time_col))
-            print('---time---')
-            print(df_conv_train_time.shape)
-            print(df_conv_validate_time.shape)
-            print(df_conv_test_time.shape)
+            np_conv_train_feature, np_conv_train_time               \
+                , np_conv_validate_feature, np_conv_validate_time   \
+                , np_conv_test_feature, np_conv_test_time           \
+                , store_df_conv_validate_feature = data_divider(df_conv_data, 0, 79999, 80000, 89999, 90000, 99999, conv_feature_col, conv_time_col)
 
-            store_df_conv_validate_feature = df_conv_validate_data[df_conv_validate_data['time_median']>0]
-            tensorflow_model_training(np_conv_train_feature, np_conv_train_time, np_conv_validate_feature, np_conv_validate_time, np_conv_test_feature, np_conv_test_time, conv_feature_col, conv_time_col, store_df_conv_validate_feature)
-
+            tensorflow_model_training(np_conv_train_feature, np_conv_train_time \
+                , np_conv_validate_feature, np_conv_validate_time               \
+                , np_conv_test_feature, np_conv_test_time                       \
+                , conv_feature_col, conv_time_col                               \
+                , store_df_conv_validate_feature)
+    
     ########### Training fully connected model ##########
     # if args.conv:
 
@@ -214,5 +246,5 @@ def main(_):
         
 if __name__ == '__main__':
     tf.app.run()
-# print(np.log([41.87858105]))
-# print(np.exp(np.log([41.87858105])))
+# print(np.log([0.012]))
+# print(np.exp(np.log([0.012])))
