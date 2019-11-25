@@ -39,6 +39,9 @@ if args.device == '':
 
 input_dir = '../data_generator/goldan_values'
 
+# conv_time_col = ['log_time_median']
+conv_time_col = ['time_median']
+
 def tensorflow_model_training(np_train_feature, np_train_time, np_validation_feature, np_validation_time, np_test_feature, np_test_time, feature_col, time_col, store_df_validation_feature):
     training_data_size = np_train_feature.shape[0]
     #step 4.1 create tf model
@@ -96,6 +99,7 @@ def tensorflow_model_training(np_train_feature, np_train_time, np_validation_fea
                 end = offset + args.batch_size
                 if(end > training_data_size):
                     end = training_data_size
+                # print('train : %d~%d'%(offset, end))
                 _, loss_value, pre_y = sess.run([train_op, loss_op, prediction], 
                     feed_dict={xs: np_train_feature[offset:end], ys: np_train_time[offset:end], tf_lr: lr})
                 total_loss += loss_value
@@ -108,22 +112,24 @@ def tensorflow_model_training(np_train_feature, np_train_time, np_validation_fea
             out_time = np.array([])
 
             for offset in range(0, num_examples, args.batch_size):
-                # print(np_validation_feature)
-                batch_x, batch_y = np_validation_feature[offset:offset+args.batch_size], np_validation_time[offset:offset+args.batch_size]
+                end = offset + args.batch_size
+                if(end > num_examples):
+                    end = num_examples
+                # print('val : %d~%d'%(offset, end))
+                batch_x, batch_y = np_validation_feature[offset:end], np_validation_time[offset:end]
                 pre_y = sess.run(prediction, feed_dict={xs: batch_x, ys: batch_y})
-                # if prec == ['new_time']:
+                if conv_time_col == ['log_time_median']:
                     ###################################################TBD
                     # choose your post process
                     ###################################################
-                pre_y = np.exp(np.array(pre_y))#(np.array(pre_y).astype(float) ** 2) / 100
-                abs_error = np.abs(np_validation_time[offset:offset+args.batch_size] - pre_y) # calculate abs error 
-                re_error  = abs_error / np_validation_time[offset:offset+args.batch_size]
+                    pre_y = np.exp(np.array(pre_y))#(np.array(pre_y).astype(float) ** 2) / 100
+                abs_error = np.abs(np_validation_time[offset:end] - pre_y) # calculate abs error 
+                re_error  = abs_error / np_validation_time[offset:end]
                 total_abse += np.sum(abs_error)
                 total_re   += np.sum(re_error)
                 out_time = np.append(out_time, pre_y)
             mean_re_error, mean_abse =  total_re / num_examples, total_abse / num_examples
 
-            # update the min error
             if re_min >= mean_re_error:
                 re_min  = mean_re_error
                 abs_min = mean_abse
@@ -152,17 +158,16 @@ def main(_):
     if args.conv:
         # step1 get the dataset 
         conv_feature_col = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias']
-        conv_time_col = ['log_time_median']
-        # conv_time_col = ['time_median']
         golden_values_col = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
         for file in glob.glob(os.path.join(input_dir, 'conv_goldan_values_%s_*.csv' % args.device)):
             df_conv_data = pd.read_csv(file, usecols=golden_values_col)
-            df_conv_data['log_time_median'] = np.log(df_conv_data['time_median'])
+            df_conv_data['log_time_median'] = np.log(df_conv_data[['time_median']])
 
             # 1. Divide total data to train, validation, test part
             df_conv_train_data = df_conv_data.loc[:args.training_data_number-1, :]
             df_conv_validate_data = df_conv_data.loc[args.training_data_number:args.training_data_number+args.validation_data_number-1, :]
             df_conv_test_data = df_conv_data.loc[args.training_data_number+args.validation_data_number:args.data_number-1, :]
+            print('---divide---')
             print(df_conv_train_data.shape)
             print(df_conv_validate_data.shape)
             print(df_conv_test_data.shape)
@@ -170,6 +175,7 @@ def main(_):
             df_conv_train_data = df_conv_train_data[df_conv_train_data['time_median']>0]
             df_conv_validate_data = df_conv_validate_data[df_conv_validate_data['time_median']>0]
             df_conv_test_data = df_conv_test_data[df_conv_test_data['time_median']>0]
+            print('---filter---')
             print(df_conv_train_data.shape)
             print(df_conv_validate_data.shape)
             print(df_conv_test_data.shape)
@@ -180,6 +186,10 @@ def main(_):
             np_conv_train_feature = df_conv_train_feature[conv_feature_col].to_numpy().reshape(-1, len(conv_feature_col))
             np_conv_validate_feature = df_conv_validate_feature[conv_feature_col].to_numpy().reshape(-1, len(conv_feature_col))
             np_conv_test_feature = df_conv_test_feature[conv_feature_col].to_numpy().reshape(-1, len(conv_feature_col))
+            print('---feature---')
+            print(df_conv_train_feature.shape)
+            print(df_conv_validate_feature.shape)
+            print(df_conv_test_feature.shape)
             # 4. Get time and translate to numpy format
             df_conv_train_time = df_conv_train_data.loc[:, conv_time_col]
             df_conv_validate_time = df_conv_validate_data.loc[:, conv_time_col]
@@ -187,6 +197,10 @@ def main(_):
             np_conv_train_time    = df_conv_train_time[conv_time_col].to_numpy().reshape(-1, len(conv_time_col))
             np_conv_validate_time    = df_conv_validate_time[conv_time_col].to_numpy().reshape(-1, len(conv_time_col))
             np_conv_test_time    = df_conv_test_time[conv_time_col].to_numpy().reshape(-1, len(conv_time_col))
+            print('---time---')
+            print(df_conv_train_time.shape)
+            print(df_conv_validate_time.shape)
+            print(df_conv_test_time.shape)
 
             store_df_conv_validate_feature = df_conv_validate_data[df_conv_validate_data['time_median']>0]
             tensorflow_model_training(np_conv_train_feature, np_conv_train_time, np_conv_validate_feature, np_conv_validate_time, np_conv_test_feature, np_conv_test_time, conv_feature_col, conv_time_col, store_df_conv_validate_feature)
@@ -196,3 +210,9 @@ def main(_):
 
     ########### Training pooling model ##########
     # if args.conv:
+
+        
+if __name__ == '__main__':
+    tf.app.run()
+# print(np.log([41.87858105]))
+# print(np.exp(np.log([41.87858105])))
