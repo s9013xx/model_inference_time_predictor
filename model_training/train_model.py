@@ -6,6 +6,9 @@ import numpy as np
 import pandas as pd
 import numpy
 import glob
+import time
+from model import Model
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
 
@@ -44,114 +47,135 @@ conv_time_col = ['time_median']
 
 def tensorflow_model_training(np_train_feature, np_train_time, np_validation_feature, np_validation_time, np_test_feature, np_test_time, feature_col, time_col, store_df_validation_feature):
     training_data_size = np_train_feature.shape[0]
+
+    num_neurons = [32,64,128,128]
+    lr_initial = 0.1
+    lr_decay_step = 40
+
+    tf.reset_default_graph()
+    data_dim = len(feature_col) # data['Train'].shape[1]
+
+    inputs = tf.placeholder(tf.float32, shape=(None, len(feature_col)), name='model_input')
+    targets = tf.placeholder(tf.float32, shape=(None), name='model_targets')
+    learning_rate = tf.placeholder(tf.float32, shape=[])
+    reg_constant = .00001
+    dropout_rate = 0.2
+    batch_size = 128
+    model_name = '2080ti'
+
+    model = Model(inputs,targets,learning_rate,reg_constant,dropout_rate, num_neurons,lr_initial,lr_decay_step,batch_size,model_name)
+    model.prediction
+    model.train_op
+    # model.train(data['Train'],time['Train'],data['Test'],time['Test'],300)
+    model.train(np_train_feature,np_train_time,np_validation_feature,np_validation_time,300)
     #step 4.1 create tf model
-    xs = tf.placeholder(tf.float32, [None, len(feature_col)], name='feature')
-    ys = tf.placeholder(tf.float32, [None, 1])
-    xs_nom = tf.layers.batch_normalization(xs)
-    l1 = tf.layers.dense(inputs=xs_nom, units=1024, activation=tf.nn.relu)
-    l1_nom = tf.layers.batch_normalization(l1)
-    l2 = tf.layers.dense(inputs=l1_nom, units=1024, activation=None)
-    l2_nom = tf.layers.batch_normalization(l2)
-    l3 = tf.layers.dense(inputs=l2_nom, units=1024, activation=None)
-    l3_nom = tf.layers.batch_normalization(l3)
-    prediction = tf.layers.dense(inputs=l3_nom, units=1, activation=None, name="prediction")
-    accuracy_operation = tf.reduce_mean(tf.abs(prediction-ys)/ys)
-    abs_value = tf.reduce_mean(tf.abs(prediction-ys))
+    # xs = tf.placeholder(tf.float32, [None, len(feature_col)], name='feature')
+    # ys = tf.placeholder(tf.float32, [None, 1])
+    # xs_nom = tf.layers.batch_normalization(xs)
+    # l1 = tf.layers.dense(inputs=xs_nom, units=1024, activation=tf.nn.relu)
+    # l1_nom = tf.layers.batch_normalization(l1)
+    # l2 = tf.layers.dense(inputs=l1_nom, units=1024, activation=None)
+    # l2_nom = tf.layers.batch_normalization(l2)
+    # l3 = tf.layers.dense(inputs=l2_nom, units=1024, activation=None)
+    # l3_nom = tf.layers.batch_normalization(l3)
+    # prediction = tf.layers.dense(inputs=l3_nom, units=1, activation=None, name="prediction")
+    # accuracy_operation = tf.reduce_mean(tf.abs(prediction-ys)/ys)
+    # abs_value = tf.reduce_mean(tf.abs(prediction-ys))
 
-    #step 4.2  choose the loss function
-    if args.loss_function_name   == 'tom_method':
-        loss_op = tf.reduce_mean(tf.reduce_sum(tf.abs(prediction-ys)/ys, reduction_indices=[1]))
-    elif args.loss_function_name == 'rmse':
-        loss_op = tf.sqrt(tf.losses.mean_squared_error(ys, prediction))
-    elif args.loss_function_name == 'mse':
-        loss_op = tf.losses.mean_squared_error(ys, prediction)
-    elif args.loss_function_name == 'mae':
-        loss_op = tf.losses.absolute_difference(ys, prediction)
+    # #step 4.2  choose the loss function
+    # if args.loss_function_name   == 'tom_method':
+    #     loss_op = tf.reduce_mean(tf.reduce_sum(tf.abs(prediction-ys)/ys, reduction_indices=[1]))
+    # elif args.loss_function_name == 'rmse':
+    #     loss_op = tf.sqrt(tf.losses.mean_squared_error(ys, prediction))
+    # elif args.loss_function_name == 'mse':
+    #     loss_op = tf.losses.mean_squared_error(ys, prediction)
+    # elif args.loss_function_name == 'mae':
+    #     loss_op = tf.losses.absolute_difference(ys, prediction)
     
-    # step 4.2.2 choose the optimizer
-    tf_lr = tf.placeholder(tf.float32, shape=[])
-    lr = args.learning_rate
-    if args.optimizer_method == 'adam':
-        train_op = tf.train.AdamOptimizer(learning_rate=tf_lr).minimize(loss_op)
-    else:
-        learning_value = [ args.learning_rate * ((args.scheduler_gamma) ** i) for i in range(args.epochs //args.scheduler_step) ]
-        boundaries     = [ args.scheduler_step*(i+1) for i in range(args.epochs // args.scheduler_step) ]
-        train_op = tf.train.MomentumOptimizer(learning_rate=tf_lr, momentum=0.9).minimize(loss_op)
-        print("boundaries", boundaries)
-        print("lr ", learning_value)
+    # # step 4.2.2 choose the optimizer
+    # tf_lr = tf.placeholder(tf.float32, shape=[])
+    # lr = args.learning_rate
+    # if args.optimizer_method == 'adam':
+    #     train_op = tf.train.AdamOptimizer(learning_rate=tf_lr).minimize(loss_op)
+    # else:
+    #     learning_value = [ args.learning_rate * ((args.scheduler_gamma) ** i) for i in range(args.epochs //args.scheduler_step) ]
+    #     boundaries     = [ args.scheduler_step*(i+1) for i in range(args.epochs // args.scheduler_step) ]
+    #     train_op = tf.train.MomentumOptimizer(learning_rate=tf_lr, momentum=0.9).minimize(loss_op)
+    #     print("boundaries", boundaries)
+    #     print("lr ", learning_value)
 
-    #step4.3 do train
-    re_min = sys.float_info.max
-    abs_min = sys.float_info.max
-    b_count = 0
+    # #step4.3 do train
+    # re_min = sys.float_info.max
+    # abs_min = sys.float_info.max
+    # b_count = 0
 
-    log_list = []
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        for i in range(args.epochs):
-            total_loss = 0
-            if args.optimizer_method == 'sgd':
-                if (i+1) >= boundaries[b_count]:
-                    lr = learning_value[b_count]
-                    b_count += 1
-                print("{} : =========>Now learning rate is {:.10f}".format(i,lr))
-            for offset in range(0, training_data_size, args.batch_size):
-                end = offset + args.batch_size
-                if(end > training_data_size):
-                    end = training_data_size
-                # print('train : %d~%d'%(offset, end))
-                _, loss_value, pre_y = sess.run([train_op, loss_op, prediction], 
-                    feed_dict={xs: np_train_feature[offset:end], ys: np_train_time[offset:end], tf_lr: lr})
-                total_loss += loss_value
+    # log_list = []
+    # with tf.Session() as sess:
+    #     sess.run(tf.global_variables_initializer())
+    #     for i in range(args.epochs):
+    #         total_loss = 0
+    #         if args.optimizer_method == 'sgd':
+    #             if (i+1) >= boundaries[b_count]:
+    #                 lr = learning_value[b_count]
+    #                 b_count += 1
+    #             print("{} : =========>Now learning rate is {:.10f}".format(i,lr))
+    #         for offset in range(0, training_data_size, args.batch_size):
+    #             end = offset + args.batch_size
+    #             if(end > training_data_size):
+    #                 end = training_data_size
+    #             # print('train : %d~%d'%(offset, end))
+    #             _, loss_value, pre_y = sess.run([train_op, loss_op, prediction], 
+    #                 feed_dict={xs: np_train_feature[offset:end], ys: np_train_time[offset:end], tf_lr: lr})
+    #             total_loss += loss_value
             
-            #step4.4 validate it 
-            num_examples = np_validation_feature.shape[0]
-            total_re = 0
-            total_abse = 0
-            count  = 0
-            out_time = np.array([])
+    #         #step4.4 validate it 
+    #         num_examples = np_validation_feature.shape[0]
+    #         total_re = 0
+    #         total_abse = 0
+    #         count  = 0
+    #         out_time = np.array([])
 
-            for offset in range(0, num_examples, args.batch_size):
-                end = offset + args.batch_size
-                if(end > num_examples):
-                    end = num_examples
-                # print('val : %d~%d'%(offset, end))
-                batch_x, batch_y = np_validation_feature[offset:end], np_validation_time[offset:end]
-                pre_y = sess.run(prediction, feed_dict={xs: batch_x, ys: batch_y})
-                if conv_time_col == ['log_time_median']:
-                    ###################################################TBD
-                    # choose your post process
-                    ###################################################
-                    pre_y = np.exp(np.array(pre_y))#(np.array(pre_y).astype(float) ** 2) / 100
-                abs_error = np.abs(np_validation_time[offset:end] - pre_y) # calculate abs error 
-                re_error  = abs_error / np_validation_time[offset:end]
-                total_abse += np.sum(abs_error)
-                total_re   += np.sum(re_error)
-                out_time = np.append(out_time, pre_y)
-            mean_re_error, mean_abse =  total_re / num_examples, total_abse / num_examples
+    #         for offset in range(0, num_examples, args.batch_size):
+    #             end = offset + args.batch_size
+    #             if(end > num_examples):
+    #                 end = num_examples
+    #             # print('val : %d~%d'%(offset, end))
+    #             batch_x, batch_y = np_validation_feature[offset:end], np_validation_time[offset:end]
+    #             pre_y = sess.run(prediction, feed_dict={xs: batch_x, ys: batch_y})
+    #             if conv_time_col == ['log_time_median']:
+    #                 ###################################################TBD
+    #                 # choose your post process
+    #                 ###################################################
+    #                 pre_y = np.exp(np.array(pre_y))#(np.array(pre_y).astype(float) ** 2) / 100
+    #             abs_error = np.abs(np_validation_time[offset:end] - pre_y) # calculate abs error 
+    #             re_error  = abs_error / np_validation_time[offset:end]
+    #             total_abse += np.sum(abs_error)
+    #             total_re   += np.sum(re_error)
+    #             out_time = np.append(out_time, pre_y)
+    #         mean_re_error, mean_abse =  total_re / num_examples, total_abse / num_examples
 
-            if re_min >= mean_re_error:
-                re_min  = mean_re_error
-                abs_min = mean_abse
-                store_df_validation_feature['pre'] = out_time
-                store_df_validation_feature.to_csv('output_%s.csv' % args.device, index=None)
-                # store the mode
-                # TBD !!!!
-                graph = tf.compat.v1.graph_util.convert_variables_to_constants(sess, sess.graph_def, ['prediction/BiasAdd'])
-                tf.io.write_graph(graph, '.', 'graph.pb', as_text=False)
+    #         if re_min >= mean_re_error:
+    #             re_min  = mean_re_error
+    #             abs_min = mean_abse
+    #             store_df_validation_feature['pre'] = out_time
+    #             store_df_validation_feature.to_csv('output_%s.csv' % args.device, index=None)
+    #             # store the mode
+    #             # TBD !!!!
+    #             graph = tf.compat.v1.graph_util.convert_variables_to_constants(sess, sess.graph_def, ['prediction/BiasAdd'])
+    #             tf.io.write_graph(graph, '.', 'graph.pb', as_text=False)
             
-            log_row_data = [i, total_loss, mean_re_error, mean_abse, re_min, abs_min]
-            log_list.append(log_row_data)
+    #         log_row_data = [i, total_loss, mean_re_error, mean_abse, re_min, abs_min]
+    #         log_list.append(log_row_data)
             
-            print("EPOCH {} ...".format(i+1))
-            print("training loss: {:.10f}".format(total_loss / training_data_size))
-            print("[val] mean relative error: {:.3f}, abs error: {:.3f} ** [min re error: {:.3f} , min abs errror {:.8f}]" \
-                .format(mean_re_error, mean_abse, re_min, abs_min))
+    #         print("EPOCH {} ...".format(i+1))
+    #         print("training loss: {:.10f}".format(total_loss / training_data_size))
+    #         print("[val] mean relative error: {:.3f}, abs error: {:.3f} ** [min re error: {:.3f} , min abs errror {:.8f}]" \
+    #             .format(mean_re_error, mean_abse, re_min, abs_min))
         
-        np_log_array = np.array(log_list)
-        result_col = ['epochs', 'total_loss', 'mean_re_error', 'mean_abse', 're_min', 'abs_min']
-        log_data = pd.DataFrame(np_log_array, columns=result_col)
-        log_data.to_csv('log_%s.csv' % args.device, index=False)
+    #     np_log_array = np.array(log_list)
+    #     result_col = ['epochs', 'total_loss', 'mean_re_error', 'mean_abse', 're_min', 'abs_min']
+    #     log_data = pd.DataFrame(np_log_array, columns=result_col)
+    #     log_data.to_csv('log_%s.csv' % args.device, index=False)
 
 
 # ---divide---                                                                                                                                                                                                     
@@ -177,6 +201,7 @@ def data_divider(df_ori_data, train_start_index, train_end_index, validate_start
     df_train_data = df_ori_data.loc[train_start_index:train_end_index, :]
     df_validate_data = df_ori_data.loc[validate_start_index:validate_end_index, :]
     df_test_data = df_ori_data.loc[test_start_index:test_end_index, :]
+
     print('---divide---')
     print(df_train_data.shape)
     print(df_validate_data.shape)
@@ -193,9 +218,19 @@ def data_divider(df_ori_data, train_start_index, train_end_index, validate_start
     df_train_feature = df_train_data.loc[:, feature_col]
     df_validate_feature = df_validate_data.loc[:, feature_col]
     df_test_feature = df_test_data.loc[:, feature_col]
-    np_train_feature = df_train_feature[feature_col].to_numpy().reshape(-1, len(feature_col))
-    np_validate_feature = df_validate_feature[feature_col].to_numpy().reshape(-1, len(feature_col))
-    np_test_feature = df_test_feature[feature_col].to_numpy().reshape(-1, len(feature_col))
+
+    scaler = StandardScaler()
+    scaler.fit(df_train_feature[feature_col])
+    df_train_feature = scaler.transform(df_train_feature[feature_col])
+    df_validate_feature = scaler.transform(df_validate_feature[feature_col])
+    df_test_feature = scaler.transform(df_test_feature[feature_col])
+
+    np_train_feature = df_train_feature.reshape(-1, len(feature_col))
+    np_validate_feature = df_validate_feature.reshape(-1, len(feature_col))
+    np_test_feature = df_test_feature.reshape(-1, len(feature_col))
+    # np_train_feature = df_train_feature[feature_col].to_numpy().reshape(-1, len(feature_col))
+    # np_validate_feature = df_validate_feature[feature_col].to_numpy().reshape(-1, len(feature_col))
+    # np_test_feature = df_test_feature[feature_col].to_numpy().reshape(-1, len(feature_col))
     print('---feature---')
     print(df_train_feature.shape)
     print(df_validate_feature.shape)
@@ -219,6 +254,7 @@ def data_divider(df_ori_data, train_start_index, train_end_index, validate_start
 def main(_):
     ########### Training convolution model ##########
     if args.conv:
+        tprint = time.time()
         # step1 get the dataset 
         conv_feature_col = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias']
         golden_values_col = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
@@ -226,17 +262,23 @@ def main(_):
             df_conv_data = pd.read_csv(file, usecols=golden_values_col)
             df_conv_data['log_time_median'] = np.log(df_conv_data[['time_median']])
 
+            train_data_number = 9999
+            # train_data_number = 19999
+            # train_data_number = 29999
+            # train_data_number = 39999
+            # train_data_number = 79999
+
             np_conv_train_feature, np_conv_train_time               \
                 , np_conv_validate_feature, np_conv_validate_time   \
                 , np_conv_test_feature, np_conv_test_time           \
-                , store_df_conv_validate_feature = data_divider(df_conv_data, 0, 79999, 80000, 89999, 90000, 99999, conv_feature_col, conv_time_col)
+                , store_df_conv_validate_feature = data_divider(df_conv_data, 0, train_data_number, 80000, 89999, 90000, 99999, conv_feature_col, conv_time_col)
 
             tensorflow_model_training(np_conv_train_feature, np_conv_train_time \
                 , np_conv_validate_feature, np_conv_validate_time               \
                 , np_conv_test_feature, np_conv_test_time                       \
                 , conv_feature_col, conv_time_col                               \
                 , store_df_conv_validate_feature)
-    
+        print('time consumed: ', (time.time()-tprint)/60)
     ########### Training fully connected model ##########
     # if args.conv:
 
