@@ -18,3 +18,5 @@ Step 2. Collect inference time in convolution, fully connected, pooling layers.
 default is collect GPU inference time, you can collect CPU inference time use --cpu parameter if you want.
 
     python collect_actual_data.py --device i3 --conv --fc --pool --cpu
+    
+    python popen_test.py --device i3 --conv --fc --pool --cpu
