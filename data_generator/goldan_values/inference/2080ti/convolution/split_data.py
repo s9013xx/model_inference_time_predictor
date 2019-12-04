@@ -30,8 +30,7 @@ def main():
     df_train_data_70000 = data_divider(df_ori, 0, 69999)
     df_train_data_80000 = data_divider(df_ori, 0, 79999)
 
-    df_validate_data = data_divider(df_ori, 80000, 89999)
-    df_test_data = data_divider(df_ori, 90000, 99999)
+    df_test_data = data_divider(df_ori, 80000, 99999)
 
     df_train_data_10000.to_csv('train_data_10000.csv', columns=golden_values_col, index=False)
     df_train_data_20000.to_csv('train_data_20000.csv', columns=golden_values_col, index=False)
@@ -42,8 +41,7 @@ def main():
     df_train_data_70000.to_csv('train_data_70000.csv', columns=golden_values_col, index=False)
     df_train_data_80000.to_csv('train_data_80000.csv', columns=golden_values_col, index=False)
 
-    df_validate_data.to_csv('validate_data.csv', columns=golden_values_col, index=False)
-    df_test_data.to_csv('test_data.csv', columns=golden_values_col, index=False)
+    df_test_data.to_csv('test_data_20000.csv', columns=golden_values_col, index=False)
 
 if __name__ == '__main__':
     main()
