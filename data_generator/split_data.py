@@ -72,18 +72,18 @@ def main():
         
         df_ori = data_filter(df_ori)
 
-        df_train_data_10000 = data_divider(df_ori, 0, 9999)
-        df_train_data_20000 = data_divider(df_ori, 0, 19999)
-        df_train_data_30000 = data_divider(df_ori, 0, 29999)
-        df_train_data_40000 = data_divider(df_ori, 0, 39999)
-        df_train_data_50000 = data_divider(df_ori, 0, 49999)
-        df_train_data_60000 = data_divider(df_ori, 0, 59999)
-        df_train_data_70000 = data_divider(df_ori, 0, 69999)
-        df_train_data_80000 = data_divider(df_ori, 0, 79999)
-
-        df_test_data_20000 = data_divider(df_ori, 80000, 99999)
-
+        df_test_data_20000 = data_divider(df_ori, 0, 19999)
+        df_train_data_10000 = data_divider(df_ori, 20000, 29999)
+        df_train_data_20000 = data_divider(df_ori, 20000, 39999)
+        df_train_data_30000 = data_divider(df_ori, 20000, 49999)
+        df_train_data_40000 = data_divider(df_ori, 20000, 59999)
+        df_train_data_50000 = data_divider(df_ori, 20000, 69999)
+        df_train_data_60000 = data_divider(df_ori, 20000, 79999)
+        df_train_data_70000 = data_divider(df_ori, 20000, 89999)
+        df_train_data_80000 = data_divider(df_ori, 20000, 99999)
+        
         store_data_path = 'goldan_values/%s/%s/%s' % (inf_or_tra, args.device, operation)
+        df_test_data_20000.to_csv(os.path.join(store_data_path, 'test_data_20000.csv'), columns=golden_values_col, index=False)
         df_train_data_10000.to_csv(os.path.join(store_data_path, 'train_data_10000.csv'), columns=golden_values_col, index=False)
         df_train_data_20000.to_csv(os.path.join(store_data_path, 'train_data_20000.csv'), columns=golden_values_col, index=False)
         df_train_data_30000.to_csv(os.path.join(store_data_path, 'train_data_30000.csv'), columns=golden_values_col, index=False)
@@ -93,7 +93,7 @@ def main():
         df_train_data_70000.to_csv(os.path.join(store_data_path, 'train_data_70000.csv'), columns=golden_values_col, index=False)
         df_train_data_80000.to_csv(os.path.join(store_data_path, 'train_data_80000.csv'), columns=golden_values_col, index=False)
 
-        df_test_data_20000.to_csv(os.path.join(store_data_path, 'test_data_20000.csv'), columns=golden_values_col, index=False)
+        
 
 if __name__ == '__main__':
     main()
