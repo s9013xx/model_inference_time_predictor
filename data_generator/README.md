@@ -20,3 +20,10 @@ default is collect GPU inference time, you can collect CPU inference time use --
     python collect_actual_data.py --device i3 --conv --fc --pool --cpu
     
     python popen_test.py --device i3 --conv --fc --pool --cpu
+
+
+# Split Data
+
+this split data function can divide data to 80,000 training data and 20,000 test data.
+
+    python split_data.py --inf --device i3 --conv
