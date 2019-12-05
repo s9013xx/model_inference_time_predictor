@@ -17,7 +17,7 @@ from sklearn.model_selection import train_test_split
 class Model:
     """Model class"""
     def __init__(self,inputs,targets,learning_rate,reg_constant,dropout_rate,
-                 num_neurons,lr_initial,lr_decay_step,batch_size,model_name):
+                 num_neurons,lr_initial,lr_decay_step,batch_size,model_name,log_path):
 
         self.inputs = inputs
         self.targets = targets
@@ -30,6 +30,7 @@ class Model:
         self.lr_decay_step = lr_decay_step
         self.batch_size = batch_size
         self.model_name = model_name
+        self.log_path = log_path
 
         self._prediction = None
         self._loss = None
@@ -145,10 +146,10 @@ class Model:
 
         initial_step = 0
 
-        try:
-            os.mkdir('./checkpoints/%s' %self.model_name)
-        except:
-            pass
+        # try:
+        #     os.mkdir('./checkpoints/%s' %self.model_name)
+        # except:
+        #     pass
 
         num_datapoints = traindata.shape[0]
         list_datapoints = np.arange(0,num_datapoints)
@@ -156,14 +157,14 @@ class Model:
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
-            ckpt = tf.train.get_checkpoint_state(os.path.dirname('./checkpoints/%s/checkpoint' %self.model_name))
+            # ckpt = tf.train.get_checkpoint_state(os.path.dirname('./checkpoints/%s/checkpoint' %self.model_name))
 
             # if that checkpoint exists, restore from checkpoint
-            if ckpt and ckpt.model_checkpoint_path:
-                saver.restore(sess, ckpt.model_checkpoint_path)
+            # if ckpt and ckpt.model_checkpoint_path:
+            #     saver.restore(sess, ckpt.model_checkpoint_path)
 
-            writer_train = tf.summary.FileWriter('./graphs/prediction/train/%s' %self.model_name, sess.graph)
-            writer_test = tf.summary.FileWriter('./graphs/prediction/test/%s' %self.model_name, sess.graph)
+            # writer_train = tf.summary.FileWriter('./graphs/prediction/train/%s' %self.model_name, sess.graph)
+            # writer_test = tf.summary.FileWriter('./graphs/prediction/test/%s' %self.model_name, sess.graph)
 
             initial_step = self.global_step.eval()
 
@@ -191,7 +192,7 @@ class Model:
                     # else :
                     #     sys.exit()
                     avg_loss += loss/num_batches
-                writer_train.add_summary(summary, global_step=epoch)
+                # writer_train.add_summary(summary, global_step=epoch)
 
                 test_loss, testsummary, pred_time = sess.run(
                         [self.loss,self.summary_op, self.prediction],
@@ -200,10 +201,10 @@ class Model:
                                 self.targets: testlabel,
                                 self.learning_rate: self.lr_initial*2**(-np.floor(i/self.lr_decay_step)),
                                 self.istraining: False})
-                writer_test.add_summary(testsummary, global_step=epoch)
+                # writer_test.add_summary(testsummary, global_step=epoch)
 
 
-                saver.save(sess, './checkpoints/%s/prediction' %self.model_name, epoch)
+                # saver.save(sess, './checkpoints/%s/prediction' %self.model_name, epoch)
                 # if epoch%10==0:
                 print('Epoch {}: Train loss {:.3f}, Test loss {:.3f}'.format(epoch, avg_loss, test_loss))
                 col = ['ori_time']
@@ -230,7 +231,8 @@ class Model:
             np_log_array = np.array(log_list)
             result_col = ['epochs', 'avg_loss', 'test_loss', 'mean_ree', 'mean_abse', 're_min', 'abs_min']
             log_data = pd.DataFrame(np_log_array, columns=result_col)
-            log_data.to_csv('log_%s.csv' % self.model_name, index=False)
+            log_path = os.path.join(os.getcwd(), self.log_path, 'log_%s.csv' % self.model_name)
+            log_data.to_csv(log_path, index=False)
 
-            writer_train.close()
-            writer_test.close()
+            # writer_train.close()
+            # writer_test.close()

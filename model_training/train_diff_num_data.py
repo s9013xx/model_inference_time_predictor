@@ -15,10 +15,6 @@ from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 
-parser = argparse.ArgumentParser(description='Model Training Parser')
-parser.add_argument('--training_method', '-tm', default= 'dnn', choices=['reg', 'dnn'], help='training method of dataset')
-args = parser.parse_args()
-
 def tom_fit2mlp(df, data_cols_conv):
     df['batchsize']       = df['batchsize']
     df['elements_matrix'] = df['matsize'] ** 2
@@ -66,10 +62,10 @@ def data_prep(df_train, df_test, data_cols, use_target = 'timeUsed_median'):
     return train_scale, test_scale, df_train[use_target], df_test[use_target], scaler
 
 
-def train_diff_num_data(data_path, predict_device, operanion_type, num_data, data_cols_conv, use_target):
+def train_diff_num_data(data_path, predict_device, operanion_type, num_data, data_cols_conv, use_target, log_dir):
     data_path = os.path.join(data_path, predict_device, operanion_type)
     train_filename = os.path.join(data_path, 'train_data_%s.csv' % num_data)
-    test_filename  = os.path.join(data_path, 'validate_data.csv')
+    test_filename  = os.path.join(data_path, 'test_data_20000.csv')
     #get the data
     df_train = pd.read_csv(train_filename)
     df_test  = pd.read_csv(test_filename)
@@ -96,7 +92,7 @@ def train_diff_num_data(data_path, predict_device, operanion_type, num_data, dat
 
     model_name = predict_device+'_'+operanion_type+'_'+num_data
     model = Model(inputs,targets,learning_rate,reg_constant,dropout_rate,
-                num_neurons,lr_initial,lr_decay_step,batch_size,model_name)
+                num_neurons,lr_initial,lr_decay_step,batch_size,model_name,log_dir)
 
     model.prediction
     model.train_op
@@ -109,18 +105,19 @@ def train_diff_num_data(data_path, predict_device, operanion_type, num_data, dat
 data_cols_conv = ['batchsize','elements_matrix','elements_kernel',
         'channels_in','channels_out','strides', 'padding', 'activation_fct', 'use_bias']
 use_target = 'timeUsed_median'
-data_path = '/home/paslab/model_inference_time_predictor/data_generator/goldan_values/inference/'
+data_path = '../data_generator/goldan_values/inference/'
 predict_device = '2080ti'#'excluding_1080ti'
 operanion_type = 'convolution'
+log_dir = 'train_diff_num_data_log'
 
-train_diff_num_data(data_path, predict_device, operanion_type, '10000', data_cols_conv, use_target)
-train_diff_num_data(data_path, predict_device, operanion_type, '20000', data_cols_conv, use_target)
-train_diff_num_data(data_path, predict_device, operanion_type, '30000', data_cols_conv, use_target)
-train_diff_num_data(data_path, predict_device, operanion_type, '40000', data_cols_conv, use_target)
-train_diff_num_data(data_path, predict_device, operanion_type, '50000', data_cols_conv, use_target)
-train_diff_num_data(data_path, predict_device, operanion_type, '60000', data_cols_conv, use_target)
-train_diff_num_data(data_path, predict_device, operanion_type, '70000', data_cols_conv, use_target)
-train_diff_num_data(data_path, predict_device, operanion_type, '80000', data_cols_conv, use_target)
+train_diff_num_data(data_path, predict_device, operanion_type, '10000', data_cols_conv, use_target, log_dir)
+train_diff_num_data(data_path, predict_device, operanion_type, '20000', data_cols_conv, use_target, log_dir)
+train_diff_num_data(data_path, predict_device, operanion_type, '30000', data_cols_conv, use_target, log_dir)
+train_diff_num_data(data_path, predict_device, operanion_type, '40000', data_cols_conv, use_target, log_dir)
+train_diff_num_data(data_path, predict_device, operanion_type, '50000', data_cols_conv, use_target, log_dir)
+train_diff_num_data(data_path, predict_device, operanion_type, '60000', data_cols_conv, use_target, log_dir)
+train_diff_num_data(data_path, predict_device, operanion_type, '70000', data_cols_conv, use_target, log_dir)
+train_diff_num_data(data_path, predict_device, operanion_type, '80000', data_cols_conv, use_target, log_dir)
 
 
 
