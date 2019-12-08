@@ -79,56 +79,90 @@ def main(_):
 
     activation_list = [
             'None',
-            'tf.nn.relu',
-            'tf.nn.tanh',
-            'tf.nn.sigmoid']
+            'tf.nn.relu']
 
 
     ########### Benchmark convolution ##########
     if args.testConv:
         if args.logfile == '':
-                logfile = str('/results/benchmark_convolution_%s_%s'
-                        %(args.device, time.strftime("%Y%m%d")))
+                logfile = str('./docker.csv')
         else:
             logfile = args.logfile
 
-        batchsize, matsize, kernelsize, channels_in, channels_out, strides, padding, activation_fct, use_bias = 62, 471, 7, 19, 18, 1, 0, 0, 1
+        daniel_col = ['activation_fct', 'batchsize', 'channels_in', 'channels_out', 'gpu', 'kernelsize', 'matsize', 'optimizer', 'padding', 'precision', 'strides', 'timeUsed_max', 'timeUsed_median', 'timeUsed_min', 'timeUsed_std', 'use_bias', 'docker_time_median']
+        df = pd.read_pickle('./benchmark_convolution__20180924.pkl')
+        df = df[(df['activation_fct'] < 2)]
+        df = df.reset_index(drop=True)
 
-        gpu_index = np.arange(args.num_val)%(len(devlist))
+        golden_values_data = pd.DataFrame(columns=daniel_col)
+        for i in range(len(df.index)):
 
-        timeUsed = np.zeros([args.num_val,args.repetitions])
+            print('========== conv', i , '==========')
+            activation_fct = df.iloc[i, daniel_col.index('activation_fct')]
+            batchsize = df.iloc[i, daniel_col.index('batchsize')]
+            channels_in = df.iloc[i, daniel_col.index('channels_in')]
+            channels_out = df.iloc[i, daniel_col.index('channels_out')]
+            gpu = df.iloc[i, daniel_col.index('gpu')]
+            kernelsize = df.iloc[i, daniel_col.index('kernelsize')]
+            matsize = df.iloc[i, daniel_col.index('matsize')]
+            optimizer = df.iloc[i, daniel_col.index('optimizer')]
+            padding = df.iloc[i, daniel_col.index('padding')]
+            precision = df.iloc[i, daniel_col.index('precision')]
+            strides = df.iloc[i, daniel_col.index('strides')]
+            timeUsed_max = df.iloc[i, daniel_col.index('timeUsed_max')]
+            timeUsed_median = df.iloc[i, daniel_col.index('timeUsed_median')]
+            timeUsed_min = df.iloc[i, daniel_col.index('timeUsed_min')]
+            timeUsed_std = df.iloc[i, daniel_col.index('timeUsed_std')]
+            if df.iloc[i, daniel_col.index('use_bias')] == True:
+                use_bias = 1
+            else: 
+                use_bias = 0
 
-        tprint = time.time()
-        
-        conv = benchmark_conv.convolution(
-            batchsize,
-            matsize,
-            kernelsize,
-            channels_in,
-            channels_out,
-            strides,
-            ('SAME' if padding==1 else 'VALID'),
-            activation_list[activation_fct],
-            use_bias,
-            devlist)
+            # batchsize, matsize, kernelsize, channels_in, channels_out, strides, padding, activation_fct, use_bias = 62, 471, 7, 19, 18, 1, 0, 0, 1
 
-        benchmark_op, benchmark_graph = conv.create_benchmark_op()
+            gpu_index = np.arange(args.num_val)%(len(devlist))
 
-        # default iter_warmup is 5, iter_benchmark is 50
-        bm_conv = run_benchmark.benchmark(
-                benchmark_op,
-                args.iter_warmup,
-                args.iter_benchmark,
-                benchmark_graph)
+            timeUsed = np.zeros([args.num_val,args.repetitions])
 
-        try:
-            timeUsed =  bm_conv.run_benchmark()
-            print('timeUsed:', timeUsed)
-        except:
-            print('execption')
-            print("Unexpected error:", sys.exc_info()[0])
-            print("!!!!!")
-            timeUsed = None
+            tprint = time.time()
+            
+            conv = benchmark_conv.convolution(
+                batchsize,
+                matsize,
+                kernelsize,
+                channels_in,
+                channels_out,
+                strides,
+                ('SAME' if padding==1 else 'VALID'),
+                activation_list[activation_fct],
+                use_bias,
+                devlist)
+
+            benchmark_op, benchmark_graph = conv.create_benchmark_op()
+
+            # default iter_warmup is 5, iter_benchmark is 50
+            bm_conv = run_benchmark.benchmark(
+                    benchmark_op,
+                    args.iter_warmup,
+                    args.iter_benchmark,
+                    benchmark_graph)
+
+            try:
+                timeUsed =  bm_conv.run_benchmark()
+                print('timeUsed:', timeUsed)
+            except:
+                print('execption')
+                print("Unexpected error:", sys.exc_info()[0])
+                print("!!!!!")
+                timeUsed = None
+
+            conv_row_data = [activation_fct, batchsize, channels_in, channels_out, gpu, kernelsize, matsize, optimizer, padding, precision, strides, timeUsed_max, timeUsed_median, timeUsed_min, timeUsed_std, use_bias, timeUsed]
+            golden_values_data.loc[0] = conv_row_data
+            
+            if i==0: 
+                golden_values_data.to_csv(logfile, index=False)
+            else:
+                golden_values_data.to_csv(logfile, index=False, mode='a', header=False)
 
 if __name__ == '__main__':
     tf.app.run()

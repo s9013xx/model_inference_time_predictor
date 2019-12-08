@@ -6,4 +6,4 @@ WORKDIR /model
 ENTRYPOINT ["python", \
             "benchmark.py", \
             "--testConv", \
-            "--num_gpu=0"]
+            "--num_gpu=1"]
