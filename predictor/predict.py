@@ -154,7 +154,7 @@ def main(_):
             channels_out = df.values[index][total_col.index('channels_out')]
             activation_fct = int(df.values[index][total_col.index('activation_fct')])
 
-            dim_input = channels_in
+            dim_input = matsize * matsize * channels_in
             dim_output = channels_out
 
             tf.reset_default_graph()

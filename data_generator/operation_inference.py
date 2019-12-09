@@ -12,7 +12,7 @@ import random
 import numpy
 from scipy import stats
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
 
 parser = argparse.ArgumentParser('Collect Actual Data Parser')
 # Benchmarks parameters
