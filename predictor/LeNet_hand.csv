@@ -1,0 +1,8 @@
+layer,operation,batchsize,matsize,kernelsize,channels_in,channels_out,strides,padding,activation_fct,use_bias,poolsize,time_max,time_min,time_median,time_mean,time_trim_mean,pre_time
+1,conv,,32,5,1,6,1,0,1,0,,,,,,,
+2,pool,,28,,6,,2,1,,,2,,,,,,
+3,conv,,14,5,6,16,1,0,1,0,,,,,,,
+4,pool,,10,,16,16,2,1,,,2,,,,,,
+5,fc,,5,,16,120,,,1,,,,,,,,
+6,fc,,1,,120,84,,,1,,,,,,,,
+7,fc,,1,,84,10,,,0,,,,,,,,
