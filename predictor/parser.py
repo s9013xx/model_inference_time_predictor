@@ -6,6 +6,7 @@ import argparse
 parser = argparse.ArgumentParser('Create Model Parser')
 parser.add_argument('--model', type=str, default='', help='Device name as appearing in logfile')
 args = parser.parse_args()
+batches = [1, 2, 4, 8, 16, 32, 64, 128]
 
 if args.model == 'vgg16':
     from keras.applications.vgg16 import VGG16
@@ -83,7 +84,6 @@ for layer in model.layers:
         channels_in = input_shape_re[2]
 
         cfg = layer.get_config()
-        print(cfg)
         channels_out = cfg["filters"]
         kernelsize_re=re.findall(pattern,str(cfg["kernel_size"]))
         kernelsize = kernelsize_re[0]
@@ -146,5 +146,10 @@ for layer in model.layers:
         row_data = [layer_count, layer_name, operation, None, matsize, None, channels_in, channels_out, None, None, activation_fct, None, None, None, None, None, None, None, None]
         df_layers.loc[layer_count-1] = row_data
 
-df_layers.to_csv('model_csv/%s.csv' % args.model, columns=total_col, index=False)
-print(df_layers)
+for batch in batches:
+    df_layers['batchsize'] = batch
+    df_layers.to_csv('model_csv/%s/%s_%d.csv' % (args.model, args.model, batch), columns=total_col, index=False)
+    print(df_layers)
+
+# df_layers.to_csv('model_csv/%s.csv' % args.model, columns=total_col, index=False)
+# print(df_layers)

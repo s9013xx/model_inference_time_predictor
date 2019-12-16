@@ -1,0 +1,12 @@
+layer,name,operation,batchsize,matsize,kernelsize,channels_in,channels_out,strides,padding,activation_fct,use_bias,poolsize,time_max,time_min,time_median,time_mean,time_trim_mean,pre_time
+1,conv2d_1,<class 'keras.layers.convolutional.Conv2D'>,32,227,11,3,96,4,0,0,1,,,,,,,
+2,max_pooling2d_1,<class 'keras.layers.pooling.MaxPooling2D'>,32,55,,96,,2,0,,,3,,,,,,
+3,conv2d_2,<class 'keras.layers.convolutional.Conv2D'>,32,27,5,96,256,1,1,0,1,,,,,,,
+4,max_pooling2d_2,<class 'keras.layers.pooling.MaxPooling2D'>,32,27,,256,,2,0,,,3,,,,,,
+5,conv2d_3,<class 'keras.layers.convolutional.Conv2D'>,32,13,3,256,384,1,1,0,1,,,,,,,
+6,conv2d_4,<class 'keras.layers.convolutional.Conv2D'>,32,13,3,384,384,1,1,0,1,,,,,,,
+7,conv2d_5,<class 'keras.layers.convolutional.Conv2D'>,32,13,3,384,256,1,1,0,1,,,,,,,
+8,max_pooling2d_3,<class 'keras.layers.pooling.MaxPooling2D'>,32,13,,256,,2,0,,,3,,,,,,
+9,dense_1,<class 'keras.layers.core.Dense'>,32,1,,9216,4096,,,1,,,,,,,,
+10,dense_2,<class 'keras.layers.core.Dense'>,32,1,,4096,4096,,,1,,,,,,,,
+11,dense_3,<class 'keras.layers.core.Dense'>,32,1,,4096,1000,,,1,,,,,,,,
