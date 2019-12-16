@@ -64,7 +64,7 @@ plot_model(model, to_file='model_pic/model_%s.png' % args.model)
 # print('model.summary():', model.summary())
 # print('layer num : ', len(model.layers))
 
-total_col = ['layer', 'name', 'operation', 'batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'poolsize', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean', 'pre_time']
+total_col = ['layer', 'name', 'operation', 'batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'poolsize', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean', 'pre_time_abse', 'pre_time_re', 'pre_time_rmse']
 layer_list = []
 layer_count = 0
 pattern = '[0-9]+'
@@ -93,7 +93,7 @@ for layer in model.layers:
         use_bias = 1 if cfg["use_bias"]==True else 0
         activation_fct = 0
         # print(matsize, channels_in, channels_out, kernelsize, strides, padding, use_bias)
-        row_data = [layer_count, layer_name, operation, None, matsize, kernelsize, channels_in, channels_out, strides, padding, activation_fct, use_bias, None, None, None, None, None, None, None]
+        row_data = [layer_count, layer_name, operation, None, matsize, kernelsize, channels_in, channels_out, strides, padding, activation_fct, use_bias, None, None, None, None, None, None, None, None, None]
         df_layers.loc[layer_count-1] = row_data
     if "Activation" in str(layer.__class__):
         if cfg["activation"] != None:
@@ -114,7 +114,7 @@ for layer in model.layers:
         strides = strides_re[0]
         padding = 1 if cfg["padding"]=='same' else 0
         # print(matsize, channels_in, strides, padding, pool_size)
-        row_data = [layer_count, layer_name, operation, None, matsize, None, channels_in, None, strides, padding, None, None, pool_size, None, None, None, None, None, None]
+        row_data = [layer_count, layer_name, operation, None, matsize, None, channels_in, None, strides, padding, None, None, pool_size, None, None, None, None, None, None, None, None]
         df_layers.loc[layer_count-1] = row_data
     if "GlobalAveragePooling2D" in str(layer.__class__):
         layer_count = layer_count + 1
@@ -128,7 +128,7 @@ for layer in model.layers:
         strides = 1
         padding = 0
         # print(matsize, channels_in, strides, padding, pool_size)
-        row_data = [layer_count, layer_name, operation, None, matsize, None, channels_in, None, strides, padding, None, None, pool_size, None, None, None, None, None, None]
+        row_data = [layer_count, layer_name, operation, None, matsize, None, channels_in, None, strides, padding, None, None, pool_size, None, None, None, None, None, None, None, None]
         df_layers.loc[layer_count-1] = row_data
     if "Dense" in str(layer.__class__):
         layer_count = layer_count + 1
@@ -143,7 +143,7 @@ for layer in model.layers:
         channels_in = input_shape_re[0]
         channels_out = cfg["units"]
         # print(matsize, channels_in, channels_out, activation_fct)
-        row_data = [layer_count, layer_name, operation, None, matsize, None, channels_in, channels_out, None, None, activation_fct, None, None, None, None, None, None, None, None]
+        row_data = [layer_count, layer_name, operation, None, matsize, None, channels_in, channels_out, None, None, activation_fct, None, None, None, None, None, None, None, None, None, None]
         df_layers.loc[layer_count-1] = row_data
 
 for batch in batches:
