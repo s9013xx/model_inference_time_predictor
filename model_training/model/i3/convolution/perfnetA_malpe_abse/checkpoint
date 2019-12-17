@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/paslab/NTUperf/model/i3/convolution/perfnetA_malpe_abse/perfnetA_malpe.ckpt-1946"
+all_model_checkpoint_paths: "/home/paslab/NTUperf/model/i3/convolution/perfnetA_malpe_abse/perfnetA_malpe.ckpt-1946"
