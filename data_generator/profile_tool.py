@@ -168,8 +168,8 @@ def main(_):
         golden_values_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
         golden_values_data = pd.DataFrame(columns=golden_values_col_name)
 
-        # for i in range(len(df.index)):
-        for i in range(5):
+        for i in range(len(df.index)):
+        # for i in range(5):
             print('========== conv', i , '==========')
             tf.reset_default_graph()
             layer = df.loc[i, :]
