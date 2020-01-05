@@ -3,6 +3,9 @@ import os
 import sys
 import json
 import argparse
+import numpy as np
+import pandas as pd
+from os import listdir
 from pprint import pprint
 
 class Recorders(object):
@@ -256,7 +259,19 @@ def read_flags():
     parser.add_argument('--trans_in', type=str, default='TransposeNHWCToNCHW', help='search tag - trans_in')
     parser.add_argument('--trans_out', type=str, default='TransposeNCHWToNHWC', help='search tag - trans_out')
     parser.add_argument('--retval', type=str, default='retval', help='search tag - retval')
+    
+    # Benchmarks parameters
+    parser.add_argument('--operation', '-op', type=str, default='conv', help='operation like conv, dense, pooling')
+    parser.add_argument('--input_dir', '-id', type=str, default=os.path.join(os.getcwd(), 'profile_test'), help='input jon file')
+    parser.add_argument('--output_dir', '-od', type=str, default=os.path.join(os.getcwd()), help='output csv file')
+    parser.add_argument('--output_file_name', '-ofn', type=str, default='all_data.csv', help='output csv file name')
+    parser.add_argument('--device', type=str, default='', help='Device name as appearing in logfile')
+
     args = parser.parse_args()
+
+    if args.device == '':
+        print('you should use --device parameter to specify collect data for which device, ex: --device 2080ti')
+        exit()
     return args
 
 def get_easytags(flags, json_data):
@@ -301,38 +316,83 @@ def get_easytags(flags, json_data):
 def main():
     flags = read_flags()
     
-    json_data = None
-    with open(flags.filename, 'r') as f:
-        json_data = json.load(f)
-        #pprint(json_data)
-    
-    eztags = get_easytags(flags, json_data)
-    #print(eztags)
-    recorders = Recorders(eztags, json_data)
-    #print(recorders)
-    transOut_time   = recorders.compute_transpose_out.wall_time + recorders.replica_transpose_out.wall_time
-    last_gpu_time   = recorders.last_gpu.start_time + recorders.last_gpu.wall_time 
-    memcpyD2H_time  = recorders.memcpyD2H.start_time + recorders.memcpyD2H.wall_time
-    
-    preprocess_time = recorders.first_gpu.start_time + recorders.compute_transpose_in.wall_time
-    execution_time  = last_gpu_time - preprocess_time - transOut_time
-    memcpy_time     = memcpyD2H_time - last_gpu_time + transOut_time
-    retval_time     = recorders.retval.start_time + recorders.retval.wall_time - memcpyD2H_time
-    retval_half_time = retval_time / 2 
+    preprocess_time_list = []
+    execution_time_list = []
+    memcpy_time_list = []
+    retval_time_list = []
+    retval_half_time_list = []
+    sess_time_list = []
 
-    if recorders.retval.start_time:
-        sess_time = recorders.retval.start_time + recorders.retval.wall_time
-    elif memcpyD2H_time:
-        sess_time = memcpyD2H_time
+    for json_file in sorted(listdir(flags.input_dir)):
+        file_path = os.path.join(flags.input_dir, json_file)
+        json_data = None
+        # print('file_path:', file_path)
+        with open(file_path, 'r') as f:
+            json_data = json.load(f)
+            # print(json_data)
+    
+        eztags = get_easytags(flags, json_data)
+        # print(eztags)
+        recorders = Recorders(eztags, json_data)
+        # print(recorders)
+        transOut_time   = recorders.compute_transpose_out.wall_time + recorders.replica_transpose_out.wall_time
+        last_gpu_time   = recorders.last_gpu.start_time + recorders.last_gpu.wall_time 
+        memcpyD2H_time  = recorders.memcpyD2H.start_time + recorders.memcpyD2H.wall_time
+        
+        preprocess_time = recorders.first_gpu.start_time + recorders.compute_transpose_in.wall_time
+        execution_time  = last_gpu_time - preprocess_time - transOut_time
+        memcpy_time     = memcpyD2H_time - last_gpu_time + transOut_time
+        retval_time     = recorders.retval.start_time + recorders.retval.wall_time - memcpyD2H_time
+        retval_half_time = retval_time / 2 
+
+        if recorders.retval.start_time:
+            sess_time = recorders.retval.start_time + recorders.retval.wall_time
+        elif memcpyD2H_time:
+            sess_time = memcpyD2H_time
+        else:
+            sess_time = last_gpu_time
+
+        preprocess_time_list.append(preprocess_time/1000)
+        execution_time_list.append(execution_time/1000)
+        memcpy_time_list.append(memcpy_time/1000)
+        retval_time_list.append(retval_time/1000)
+        retval_half_time_list.append(retval_half_time/1000)
+        sess_time_list.append(sess_time/1000)
+
+        # print("preprocess:       {} ms".format(preprocess_time/1000))
+        # print("execution_time:   {} ms".format(execution_time/1000))
+        # print("memcpy_time:      {} ms".format(memcpy_time/1000))
+        # print("retval_time:      {} ms".format(retval_time/1000))
+        # print("retval_half_time: {} ms".format(retval_half_time/1000))
+        # print("session time      {} ms".format(sess_time/1000))
+
+    if flags.operation == 'conv':
+        conv_col_name = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
+        df = pd.read_csv('goldan_values/conv_goldan_values_1080ti_20191210041830.csv', usecols=conv_col_name)
+    elif flags.operation == 'dense':
+        fc_col_name = ['batchsize', 'dim_input', 'dim_output', 'activation_fct', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
+        df = pd.read_csv('goldan_values/fc_goldan_values_1080ti_20191213144429.csv', usecols=fc_col_name)
+    elif flags.operation == 'pooling':
+        pool_col_name = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
+        df = pd.read_csv('goldan_values/pool_goldan_values_1080ti_20191216084434.csv', usecols=pool_col_name)
     else:
-        sess_time = last_gpu_time
+        print('wrong operations')
+        exit()
+    df['preprocess_time'] = pd.DataFrame(np.array(preprocess_time_list))
+    df['execution_time'] = pd.DataFrame(np.array(execution_time_list))
+    df['memcpy_time'] = pd.DataFrame(np.array(memcpy_time_list))
+    df['retval_time'] = pd.DataFrame(np.array(retval_time_list))
+    df['retval_half_time'] = pd.DataFrame(np.array(retval_half_time_list))
+    df['sess_time'] = pd.DataFrame(np.array(sess_time_list))
 
-    print("preprocess:       {} ms".format(preprocess_time/1000))
-    print("execution_time:   {} ms".format(execution_time/1000))
-    print("memcpy_time:      {} ms".format(memcpy_time/1000))
-    print("retval_time:      {} ms".format(retval_time/1000))
-    print("retval_half_time: {} ms".format(retval_half_time/1000))
-    print("session time      {} ms".format(sess_time/1000))
+    out_log_path  = os.path.join(flags.output_dir, flags.device, flags.operation)
+    if not os.path.exists(out_log_path):
+        os.makedirs(out_log_path)
+    print('to csv ', os.path.join(out_log_path, flags.output_file_name))
+    df.to_csv(os.path.join(out_log_path, flags.output_file_name))
 
 if __name__ == '__main__':
     main()
+
+
+
