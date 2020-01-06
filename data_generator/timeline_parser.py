@@ -5,6 +5,7 @@ import json
 import argparse
 import numpy as np
 import pandas as pd
+import glob
 from os import listdir
 from pprint import pprint
 
@@ -323,11 +324,16 @@ def main():
     retval_half_time_list = []
     sess_time_list = []
 
-    for json_file in sorted(listdir(flags.input_dir)):
-        file_path = os.path.join(flags.input_dir, json_file)
+    # files = listdir(flags.input_dir)
+    files = list(filter(os.path.isfile, glob.glob(flags.input_dir+ "/" + "*")))
+    # print(files)
+    files.sort(key=lambda x: os.path.getmtime(x))
+    for json_file in files:
+    # for json_file in sorted(listdir(flags.input_dir)):
+        # file_path = os.path.join(flags.input_dir, json_file)
         json_data = None
-        # print('file_path:', file_path)
-        with open(file_path, 'r') as f:
+        print('file_path:', json_file)
+        with open(json_file, 'r') as f:
             json_data = json.load(f)
             # print(json_data)
     
