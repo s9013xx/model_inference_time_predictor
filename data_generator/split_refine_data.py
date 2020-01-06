@@ -9,8 +9,8 @@ import glob
 parser = argparse.ArgumentParser('Split Data Parser')
 # Benchmarks parameters
 parser.add_argument('--conv', action="store_true", default=False, help='Benchmark convolution layer')
-parser.add_argument('--fc', action="store_true", default=False, help='Benchmark fully connection layer')
-parser.add_argument('--pool', action="store_true", default=False, help='Benchmark pooling layer')
+parser.add_argument('--dense', action="store_true", default=False, help='Benchmark fully connection layer')
+parser.add_argument('--pooling', action="store_true", default=False, help='Benchmark pooling layer')
 # General parameters
 parser.add_argument('--log_file', type=str, default='', help='Text file to store results')
 parser.add_argument('--device', type=str, default='', help='Device name as appearing in logfile')
@@ -23,16 +23,15 @@ args = parser.parse_args()
 
 if args.conv:
     operation = 'conv'
-    golden_values_col = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean', 'elements_matrix', 'elements_kernel']
-elif args.fc:
-    operation = 'fc'
-    golden_values_col = ['batchsize', 'dim_input', 'dim_output', 'activation_fct', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
-elif args.pool:
-    operation = 'pool'
-    golden_values_col = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean', 'elements_matrix']
+    golden_values_col = ['batchsize', 'matsize', 'kernelsize', 'channels_in', 'channels_out', 'strides', 'padding', 'activation_fct', 'use_bias', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean', 'preprocess_time', 'execution_time', 'memcpy_time', 'retval_time', 'mem_ret', 'retval_half_time', 'sess_time', 'elements_matrix', 'elements_kernel']
+elif args.dense:
+    operation = 'dense'
+    golden_values_col = ['batchsize', 'dim_input', 'dim_output', 'activation_fct', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean', 'preprocess_time', 'execution_time', 'memcpy_time', 'retval_time', 'mem_ret', 'retval_half_time', 'sess_time']
+elif args.pooling:
+    operation = 'pooling'
+    golden_values_col = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean', 'preprocess_time', 'execution_time', 'memcpy_time', 'retval_time', 'mem_ret', 'retval_half_time', 'sess_time', 'elements_matrix']
 else:
     print('you should use specific which operation data you want to split, ex: --conv')
-    golden_values_col = []
     exit()
 
 if args.inf:
@@ -66,8 +65,9 @@ def data_divider(df_ori_data, start_index, end_index):
 def main():
     # step1 get the dataset 
     
-    read_file_path = os.path.join('goldan_values', '%s_goldan_values_%s_*.csv' % (operation, args.device))
-    
+    # read_file_path = os.path.join('goldan_values', '%s_goldan_values_%s_*.csv' % (operation, args.device))
+    read_file_path = os.path.join('1080ti', operation, 'all_data.csv')
+
     for file in glob.glob(read_file_path):
         df_ori = pd.read_csv(file, index_col=None)
         
@@ -98,17 +98,23 @@ def main():
         if args.conv:
             df_test_data_20000['elements_matrix'] = df_test_data_20000['matsize'] ** 2
             df_test_data_20000['elements_kernel'] = df_test_data_20000['kernelsize'] **2
+            df_test_data_20000['mem_ret'] = df_test_data_20000['memcpy_time'] + df_test_data_20000['retval_time']
             df_test_data_20000.to_csv(os.path.join(store_data_path, 'test.csv'), columns=golden_values_col, index=False)
             df_train_data_80000['elements_matrix'] = df_train_data_80000['matsize'] ** 2
             df_train_data_80000['elements_kernel'] = df_train_data_80000['kernelsize'] **2
+            df_train_data_80000['mem_ret'] = df_train_data_80000['memcpy_time'] + df_train_data_80000['retval_time']
             df_train_data_80000.to_csv(os.path.join(store_data_path, 'train.csv'), columns=golden_values_col, index=False)
-        elif args.fc:
+        elif args.dense:
+            df_test_data_20000['mem_ret'] = df_test_data_20000['memcpy_time'] + df_test_data_20000['retval_time']
             df_test_data_20000.to_csv(os.path.join(store_data_path, 'test.csv'), columns=golden_values_col, index=False)
+            df_train_data_80000['mem_ret'] = df_train_data_80000['memcpy_time'] + df_train_data_80000['retval_time']
             df_train_data_80000.to_csv(os.path.join(store_data_path, 'train.csv'), columns=golden_values_col, index=False)
-        elif args.pool:
+        elif args.pooling:
             df_test_data_20000['elements_matrix'] = df_test_data_20000['matsize'] ** 2
+            df_test_data_20000['mem_ret'] = df_test_data_20000['memcpy_time'] + df_test_data_20000['retval_time']
             df_test_data_20000.to_csv(os.path.join(store_data_path, 'test.csv'), columns=golden_values_col, index=False)
             df_train_data_80000['elements_matrix'] = df_train_data_80000['matsize'] ** 2
+            df_train_data_80000['mem_ret'] = df_train_data_80000['memcpy_time'] + df_train_data_80000['retval_time']
             df_train_data_80000.to_csv(os.path.join(store_data_path, 'train.csv'), columns=golden_values_col, index=False)
             # golden_values_col = ['batchsize', 'matsize', 'channels_in', 'poolsize', 'padding', 'strides', 'time_max', 'time_min', 'time_median', 'time_mean', 'time_trim_mean']
 
