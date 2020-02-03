@@ -1,3 +1,19 @@
+# Notice
+
+1. Tensorflow timeline profile need below flow
+
+    sudo apt-get install libcupti-dev
+
+2. Add CPUIT in ~/.bashrc
+
+    export PATH=/usr/local/cuda-10.0/bin:/usr/local/cuda-10.1/bin:$PATH
+    
+    export LD_LIBRARY_PATH=/usr/local/cuda-10.0/lib64:/usr/local/cuda-10.1/lib64:/usr/local/cuda-       10.0/extras/CUPTI/lib64:$LD_LIBRARY_PATH
+
+3. Activate .bashrc file
+
+    source ~/.bashrc
+    
 # Model Inference Time Predictor
 
 Step 1. Download need software.
